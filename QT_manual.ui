@@ -1,0 +1,850 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Manual_Segmentation</class>
+ <widget class="QDialog" name="Manual_Segmentation">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1250</width>
+    <height>1000</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1250</width>
+    <height>1000</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1250</width>
+    <height>1000</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">background-color:rgb(32, 38, 52);</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <layout class="QVBoxLayout" name="verticalLayout_4">
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_5">
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_3">
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <item>
+            <widget class="QLabel" name="label_FileInfo_7">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>38</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>38</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>微软雅黑</family>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color:rgb(255,255,255);</string>
+             </property>
+             <property name="text">
+              <string>Enface</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_enface">
+             <property name="minimumSize">
+              <size>
+               <width>340</width>
+               <height>340</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>340</width>
+               <height>340</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(56, 64, 85);</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_5">
+           <item>
+            <widget class="QLabel" name="label_FileInfo_11">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>38</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>38</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>微软雅黑</family>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color:rgb(255,255,255);</string>
+             </property>
+             <property name="text">
+              <string>Vessel Mask</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_vessel_mask">
+             <property name="minimumSize">
+              <size>
+               <width>340</width>
+               <height>340</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>340</width>
+               <height>340</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(56, 64, 85);</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QLabel" name="label_FileInfo_8">
+             <property name="minimumSize">
+              <size>
+               <width>150</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>150</width>
+               <height>38</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>微软雅黑</family>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color:rgb(255,255,255);</string>
+             </property>
+             <property name="text">
+              <string>Binary Threshold</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="lineEdit_binary_threshold">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QLineEdit {
+	border-radius: 4px;
+	background-color:rgb(83, 89, 110);
+	color:white;
+	border: 1px solid black;
+}
+
+QLineEdit:disabled {
+	border-radius: 4px;
+	background-color:rgb(83, 89, 110);
+	color:rgb(200, 200, 200);
+	border: 0px solid black;
+}</string>
+             </property>
+             <property name="text">
+              <string>0.3</string>
+             </property>
+             <property name="readOnly">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_7">
+           <item>
+            <widget class="QLabel" name="label_FileInfo_13">
+             <property name="minimumSize">
+              <size>
+               <width>150</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>150</width>
+               <height>38</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>微软雅黑</family>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color:rgb(255,255,255);</string>
+             </property>
+             <property name="text">
+              <string>Filter Area</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="lineEdit_filter_area">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QLineEdit {
+	border-radius: 4px;
+	background-color:rgb(83, 89, 110);
+	color:white;
+	border: 1px solid black;
+}
+
+QLineEdit:disabled {
+	border-radius: 4px;
+	background-color:rgb(83, 89, 110);
+	color:rgb(200, 200, 200);
+	border: 0px solid black;
+}</string>
+             </property>
+             <property name="text">
+              <string>50</string>
+             </property>
+             <property name="readOnly">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <item>
+            <widget class="QLabel" name="label_FileInfo_9">
+             <property name="minimumSize">
+              <size>
+               <width>150</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>150</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>微软雅黑</family>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color:rgb(255,255,255);</string>
+             </property>
+             <property name="text">
+              <string>Type</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="comboBox_type">
+             <property name="minimumSize">
+              <size>
+               <width>130</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QComboBox {
+	border-radius: 4px;
+	background-color:rgb(83, 89, 110);
+	color:white;
+	border: 1px solid black;
+}
+
+QComboBox QAbstractItemView { color: white; }
+
+QComboBox:disabled {
+	border-radius: 4px;
+	background-color:rgb(83, 89, 110);
+	color:rgb(200, 200, 200);
+	border: 0px solid black;
+}</string>
+             </property>
+             <item>
+              <property name="text">
+               <string>Vein</string>
+              </property>
+              <property name="icon">
+               <iconset>
+                <normaloff>icons/vessel_red.png</normaloff>icons/vessel_red.png</iconset>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Artery</string>
+              </property>
+              <property name="icon">
+               <iconset>
+                <normaloff>icons/vessel_blue.png</normaloff>icons/vessel_blue.png</iconset>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>FOVA</string>
+              </property>
+              <property name="icon">
+               <iconset>
+                <normaloff>icons/polygon.png</normaloff>icons/polygon.png</iconset>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>None</string>
+              </property>
+              <property name="icon">
+               <iconset>
+                <normaloff>icons/stop.png</normaloff>icons/stop.png</iconset>
+              </property>
+             </item>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <item>
+            <widget class="QLabel" name="label_FileInfo_10">
+             <property name="minimumSize">
+              <size>
+               <width>150</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>150</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>微软雅黑</family>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color:rgb(255,255,255);</string>
+             </property>
+             <property name="text">
+              <string>Pen Size</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="lineEdit_pen_size">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QLineEdit {
+	border-radius: 4px;
+	background-color:rgb(83, 89, 110);
+	color:white;
+	border: 1px solid black;
+}
+
+QLineEdit:disabled {
+	border-radius: 4px;
+	background-color:rgb(83, 89, 110);
+	color:rgb(200, 200, 200);
+	border: 0px solid black;
+}</string>
+             </property>
+             <property name="text">
+              <string>10</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+             </property>
+             <property name="readOnly">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QLabel" name="label_FileInfo_6">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>38</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>38</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>微软雅黑</family>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">color:rgb(255,255,255);</string>
+           </property>
+           <property name="text">
+            <string>Overlay</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_overlay">
+           <property name="minimumSize">
+            <size>
+             <width>870</width>
+             <height>870</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>870</width>
+             <height>870</height>
+            </size>
+           </property>
+           <property name="cursor">
+            <cursorShape>CrossCursor</cursorShape>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background-color: rgb(56, 64, 85);</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="Line" name="line">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QToolButton" name="button_binarize">
+         <property name="minimumSize">
+          <size>
+           <width>100</width>
+           <height>38</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>100</width>
+           <height>38</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <family>微软雅黑</family>
+           <pointsize>8</pointsize>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QToolButton {
+	color:white; 
+	background:qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0, 		stop:0 rgba(32, 38, 52, 255), 
+		stop:1 rgba(91, 99, 120, 255));
+	border: 2px solid black;
+	border-radius: 8px;
+}
+
+QToolButton:checked {
+	color:white; 
+	background-color: rgba(121, 129, 150, 255);
+	border: 2px solid black;
+	border-radius: 8px;
+	padding: 0;
+}
+
+QToolButton:disabled {
+	color:gray; 
+	background-color: rgba(32, 38, 52, 255);
+	border: 2px solid black;
+	border-radius: 8px;
+	padding: 0;
+}</string>
+         </property>
+         <property name="text">
+          <string>Binarize</string>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>icons/finish.png</normaloff>icons/finish.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>18</width>
+           <height>18</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>false</bool>
+         </property>
+         <property name="toolButtonStyle">
+          <enum>Qt::ToolButtonTextUnderIcon</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="button_filter">
+         <property name="minimumSize">
+          <size>
+           <width>100</width>
+           <height>38</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>100</width>
+           <height>38</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <family>微软雅黑</family>
+           <pointsize>8</pointsize>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QToolButton {
+	color:white; 
+	background:qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0, 		stop:0 rgba(32, 38, 52, 255), 
+		stop:1 rgba(91, 99, 120, 255));
+	border: 2px solid black;
+	border-radius: 8px;
+}
+
+QToolButton:checked {
+	color:white; 
+	background-color: rgba(121, 129, 150, 255);
+	border: 2px solid black;
+	border-radius: 8px;
+	padding: 0;
+}
+
+QToolButton:disabled {
+	color:gray; 
+	background-color: rgba(32, 38, 52, 255);
+	border: 2px solid black;
+	border-radius: 8px;
+	padding: 0;
+}</string>
+         </property>
+         <property name="text">
+          <string>Filter</string>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>icons/finish.png</normaloff>icons/finish.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>18</width>
+           <height>18</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>false</bool>
+         </property>
+         <property name="toolButtonStyle">
+          <enum>Qt::ToolButtonTextUnderIcon</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="button_clearall">
+         <property name="minimumSize">
+          <size>
+           <width>100</width>
+           <height>38</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>100</width>
+           <height>38</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <family>微软雅黑</family>
+           <pointsize>8</pointsize>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QToolButton {
+	color:white; 
+	background:qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0, 		stop:0 rgba(32, 38, 52, 255), 
+		stop:1 rgba(91, 99, 120, 255));
+	border: 2px solid black;
+	border-radius: 8px;
+}
+
+QToolButton:checked {
+	color:white; 
+	background-color: rgba(121, 129, 150, 255);
+	border: 2px solid black;
+	border-radius: 8px;
+	padding: 0;
+}
+
+QToolButton:disabled {
+	color:gray; 
+	background-color: rgba(32, 38, 52, 255);
+	border: 2px solid black;
+	border-radius: 8px;
+	padding: 0;
+}</string>
+         </property>
+         <property name="text">
+          <string>ClearAll</string>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>icons/finish.png</normaloff>icons/finish.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>18</width>
+           <height>18</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>false</bool>
+         </property>
+         <property name="toolButtonStyle">
+          <enum>Qt::ToolButtonTextUnderIcon</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="button_finish">
+         <property name="minimumSize">
+          <size>
+           <width>100</width>
+           <height>38</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>100</width>
+           <height>38</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <family>微软雅黑</family>
+           <pointsize>8</pointsize>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QToolButton {
+	color:white; 
+	background:qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0, 		stop:0 rgba(32, 38, 52, 255), 
+		stop:1 rgba(91, 99, 120, 255));
+	border: 2px solid black;
+	border-radius: 8px;
+}
+
+QToolButton:checked {
+	color:white; 
+	background-color: rgba(121, 129, 150, 255);
+	border: 2px solid black;
+	border-radius: 8px;
+	padding: 0;
+}
+
+QToolButton:disabled {
+	color:gray; 
+	background-color: rgba(32, 38, 52, 255);
+	border: 2px solid black;
+	border-radius: 8px;
+	padding: 0;
+}</string>
+         </property>
+         <property name="text">
+          <string>Finish</string>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>icons/finish.png</normaloff>icons/finish.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>18</width>
+           <height>18</height>
+          </size>
+         </property>
+         <property name="toolButtonStyle">
+          <enum>Qt::ToolButtonTextUnderIcon</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources/>
+ <connections/>
+</ui>
