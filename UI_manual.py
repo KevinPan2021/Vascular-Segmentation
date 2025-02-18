@@ -5,13 +5,16 @@ from PyQt5.QtWidgets import QDialog, QLabel
 from PyQt5.QtCore import QPoint, Qt
 
 # system packages
+import os
+import cv2
 import numpy as np
 from skimage.morphology import remove_small_objects, label
 
 
 # custom package
 from Vessel_Extraction import Vessel_Quantification
-from data_process import qpixmap_to_numpy
+from read_write import Read_Data
+from data_process import qpixmap_to_numpy, overlay
 
 
 
@@ -186,6 +189,19 @@ class UI_Manual_Action(QDialog):
         self.setWindowTitle('Manual Segmentation')
         
         self.parent_cls = parent_cls
+        
+        # load the enface
+        enface_fp = self.dataset.get_filepath(self.selected_row)[2]
+        self.enface = Read_Data(enface_fp).get()
+        
+        # load the prediction
+        self.enface_name = os.path.basename(enface_fp)
+        prediction_name = f'{self.enface_name}_prediction.png'
+        if prediction_name in os.listdir(self.parent_cls.output_folder):
+            self.prediction = cv2.imread(f'{self.parent_cls.output_folder}/{prediction_name}', cv2.IMREAD_UNCHANGED)
+        else:
+            self.prediction = None
+            
         self.binary = None
         
         self.overlay_pixmap = QPixmap(self.label_overlay.size())  
@@ -212,14 +228,13 @@ class UI_Manual_Action(QDialog):
     
     # update the label display
     def update_enface_display(self):
-        # enface display        
-        enface = self.image_list[self.selected_row].enface
-        if enface is None:
+        # enface display
+        if self.enface is None:
             return
         
         # Convert the OpenCV image to QImage
-        height, width = enface.shape
-        gray_qimage = QImage(enface.data, width, height, width, QImage.Format_Grayscale8)
+        height, width = self.enface.shape
+        gray_qimage = QImage(self.enface.data, width, height, width, QImage.Format_Grayscale8)
     
         # Convert QImage to QPixmap and set it in the label
         gray_pixmap = QPixmap.fromImage(gray_qimage)
@@ -256,8 +271,8 @@ class UI_Manual_Action(QDialog):
         
     def update_overlay_display(self):
         # Convert the OpenCV image to QImage
-        height, width = self.image_list[self.selected_row].enface.shape
-        gray_qimage = QImage(self.image_list[self.selected_row].enface.data, width, height, width, QImage.Format_Grayscale8)
+        height, width = self.enface.shape
+        gray_qimage = QImage(self.enface.data, width, height, width, QImage.Format_Grayscale8)
     
         # Convert QImage to QPixmap and set it in the label
         gray_pixmap = QPixmap.fromImage(gray_qimage)
@@ -275,12 +290,12 @@ class UI_Manual_Action(QDialog):
     # binarize the enface image
     def binarize_action(self):
         thres = float(self.lineEdit_binary_threshold.text())
-        self.binary = Vessel_Quantification(self.image_list[self.selected_row].enface, thres).Ibinary2
+        self.binary = Vessel_Quantification(self.enface, thres).Ibinary2
         
         # processed
-        if not self.image_list[self.selected_row].prediction is None:
+        if not self.prediction is None:
             # Convert to RGBA format for pixel manipulation
-            color_image = self.image_list[self.selected_row].prediction
+            color_image = self.prediction
             
             # Convert NumPy array to QImage
             height, width, channels = color_image.shape
@@ -304,12 +319,21 @@ class UI_Manual_Action(QDialog):
         
     # Rescale overlay_pixmap, convert to NumPy, and save it
     def finish_action(self):
-        target_shape = self.image_list[self.selected_row].enface.shape[:2]  # (height, width)
+        target_shape = self.enface.shape[:2]  # (height, width)
+        
         # Resize overlay_pixmap to match cavf_pred_2D dimensions
         scaled_pixmap = self.overlay_pixmap.scaled(target_shape[1], target_shape[0], Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
         # Convert the resized pixmap to a NumPy array
-        self.image_list[self.selected_row].prediction = qpixmap_to_numpy(scaled_pixmap)
-    
+        prediction = qpixmap_to_numpy(scaled_pixmap)
+        
+        overlayed = overlay(self.enface, prediction)
+        
+        # Convert from RGBA to BGRA
+        prediction = cv2.cvtColor(prediction, cv2.COLOR_BGRA2RGBA)
+        
+        cv2.imwrite(f'{self.parent_cls.output_folder}/{self.enface_name}_prediction.png', prediction)
+        cv2.imwrite(f'{self.parent_cls.output_folder}/{self.enface_name}_overlay.png', overlayed)
+        
         # Update display
         self.parent_cls._update_display()
         self.close()

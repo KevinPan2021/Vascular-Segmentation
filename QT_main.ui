@@ -54,46 +54,7 @@
     <string notr="true">background-color:rgb(32, 38, 52);</string>
    </property>
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0" rowspan="2">
-     <spacer name="horizontalSpacer_2">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>40</width>
-        <height>20</height>
-       </size>
-      </property>
-     </spacer>
-    </item>
-    <item row="0" column="1" rowspan="2" colspan="2">
-     <spacer name="verticalSpacer">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>20</width>
-        <height>40</height>
-       </size>
-      </property>
-     </spacer>
-    </item>
-    <item row="0" column="3" rowspan="2">
-     <spacer name="horizontalSpacer_3">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>40</width>
-        <height>20</height>
-       </size>
-      </property>
-     </spacer>
-    </item>
-    <item row="1" column="2">
+    <item row="1" column="1">
      <layout class="QVBoxLayout" name="verticalLayout_5">
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_63">
@@ -247,6 +208,11 @@ QLineEdit:disabled {
               <width>240</width>
               <height>16777215</height>
              </size>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>6</pointsize>
+             </font>
             </property>
             <property name="autoFillBackground">
              <bool>true</bool>
@@ -757,79 +723,6 @@ QToolButton:disabled {
          </widget>
         </item>
         <item>
-         <widget class="QToolButton" name="button_export">
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>38</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>100</width>
-            <height>38</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <family>微软雅黑</family>
-            <pointsize>8</pointsize>
-           </font>
-          </property>
-          <property name="toolTipDuration">
-           <number>-1</number>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QToolButton {
-	color:white; 
-	background:qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0, 		stop:0 rgba(32, 38, 52, 255), 
-		stop:1 rgba(91, 99, 120, 255));
-	border: 2px solid black;
-	border-radius: 8px;
-}
-
-QToolButton:checked {
-	color:white; 
-	background-color: rgba(121, 129, 150, 255);
-	border: 2px solid black;
-	border-radius: 8px;
-	padding: 0;
-}
-
-QToolButton:disabled {
-	color:gray; 
-	background-color: rgba(32, 38, 52, 255);
-	border: 2px solid black;
-	border-radius: 8px;
-	padding: 0;
-}</string>
-          </property>
-          <property name="text">
-           <string>Export</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../pyoct/OCTA_PS_v1.0/code/icons/start.png</normaloff>
-            <normalon>../../../pyoct/OCTA_PS_v1.0/code/icons/stop.png</normalon>../../../pyoct/OCTA_PS_v1.0/code/icons/start.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>18</width>
-            <height>18</height>
-           </size>
-          </property>
-          <property name="checkable">
-           <bool>false</bool>
-          </property>
-          <property name="checked">
-           <bool>false</bool>
-          </property>
-          <property name="toolButtonStyle">
-           <enum>Qt::ToolButtonTextUnderIcon</enum>
-          </property>
-         </widget>
-        </item>
-        <item>
          <spacer name="horizontalSpacer_21">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -846,8 +739,8 @@ QToolButton:disabled {
       </item>
      </layout>
     </item>
-    <item row="2" column="1" colspan="2">
-     <spacer name="verticalSpacer_2">
+    <item row="3" column="1">
+     <spacer name="verticalSpacer_4">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
@@ -855,6 +748,45 @@ QToolButton:disabled {
        <size>
         <width>20</width>
         <height>40</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item row="0" column="1">
+     <spacer name="verticalSpacer_3">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>40</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item row="1" column="0">
+     <spacer name="horizontalSpacer_2">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>40</width>
+        <height>20</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item row="0" column="2" rowspan="3">
+     <spacer name="horizontalSpacer_3">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>40</width>
+        <height>20</height>
        </size>
       </property>
      </spacer>

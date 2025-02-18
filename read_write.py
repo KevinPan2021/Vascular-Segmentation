@@ -2,6 +2,8 @@ import numpy as np
 import cv2
 import torch
 import pydicom
+import pandas as pd
+import os
 
 # custom package
 from model import IPNV2, IPNV2_with_proj_map
@@ -107,3 +109,30 @@ class Read_Data():
             
         return data
             
+
+
+class load_tsv():
+    def __init__(self, tsv_path):
+        super().__init__()
+        self.root = os.path.join(tsv_path, '..', '..')
+        self.manifest = pd.read_csv(tsv_path, sep='\t')
+        
+    def __len__(self):
+        return len(self.manifest)
+    
+    def get_filepath(self, idx):
+        if idx >= len(self.manifest):
+            raise IndexError
+        
+        row = self.manifest.iloc[idx]
+        
+        oct_fp = os.path.abspath(self.root + row['associated_structural_oct_file_path'])
+        octa_fp = os.path.abspath(self.root + row['flow_cube_file_path'])
+        enface_fp = os.path.abspath(self.root + row['associated_enface_1_file_path'])
+        
+        return oct_fp, octa_fp, enface_fp
+    
+    
+    
+    
+    

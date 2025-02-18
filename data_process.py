@@ -1,55 +1,144 @@
+from PyQt5.QtGui import QImage
+from PyQt5.QtCore import pyqtSignal, QThread
+
+
+import os
+import cv2
 import numpy as np
 import torch
 import torch.nn.functional as F
+from torch.cuda.amp import autocast
+from torch.utils.data import DataLoader
 from skimage.filters import threshold_otsu
+from torch.utils.data import Dataset
 
 
-from PyQt5.QtGui import QImage
-from PyQt5.QtCore import pyqtSignal, Qt, QPointF, QEvent, QSize, QThread
-from PyQt5.QtWidgets import QLabel, QMainWindow, QApplication, QWidget, QLineEdit, QDesktopWidget, QFileDialog, QCheckBox, QTableWidgetItem
+from read_write import Read_Data
 
 
-class Data():
-    def __init__(self, filename, enface=None, OCT=None, OCTA=None, cavf_pred_2D=None, prediction=None, model_output=None):
-        self.filename = filename
-        self.enface = enface
-        self.OCT = OCT
-        self.OCTA = OCTA
-        self.cavf_pred_2D = cavf_pred_2D
-        self.prediction = prediction
-        self.model_output = model_output
+class Aireadi_Dataset(Dataset):
+    def __init__(self, data_map, roi):
+        super().__init__()
+        self.data_map = data_map
+        self.roi = roi
         
+        # Build an idx map to map idx to data_map keys
+        self.idx_map = dict()
+        
+        # Convert data_map.keys() to a list
+        keys = list(data_map.keys())
+        
+        # Iterate over the keys and map idx to key
+        for i in range(len(keys)):
+            self.idx_map[i] = keys[i]
+            
+        
+    def __len__(self):
+        return len(self.idx_map)
+    
+    
+    def __getitem__(self, idx):
+        oct_fp, octa_fp, enface_fp = self.get_filepath(idx)
+        
+        OCT_img = Read_Data(oct_fp).get()
+        OCTA_img = Read_Data(octa_fp).get()
+        
+        OCT_img = OCT_img.transpose(1, 0, 2)
+        OCTA_img = OCTA_img.transpose(1, 0, 2)
+        
+        enface_img = Read_Data(enface_fp).get()
+        
+        data, proj_map = process_data(
+            OCT_img=OCT_img, OCTA_img=OCTA_img, roi_target_depth=self.roi, 
+            use_proj_map=True, OCTA_proj_map=enface_img
+        )
+        
+        return enface_fp, data, proj_map
+    
+    
+    def get_filepath(self, idx):
+        group = self.idx_map[idx]
+        
+        item = self.data_map[group]
+        
+        oct_fp = item['oct_path']
+        octa_fp = item['octa_path']
+        enface_fp = item['enface_path']
+        
+        return oct_fp, octa_fp, enface_fp
+    
+    
+    
+    
+
 
 class ProcessThread(QThread):
     process = pyqtSignal(int)  # Signal to update progress bar
     work_complete_signal = pyqtSignal()  # Signal when work is finished
 
-    def __init__(self, parent):
+    def __init__(self, parent, device):
         super().__init__()
         self.parent = parent
         self.running = True  # Flag to control stopping
-
-    def run(self):
-        total_images = len(self.parent.image_list)
+        self.device = device
         
-        for i, data_cls in enumerate(self.parent.image_list):
-            if not self.running:
-                break  # Stop processing if stopped
+        
+    
+    @torch.no_grad() # Disable gradient calculations
+    def run(self):
+        
+        total_images = len(self.parent.dataset)  # Get total dataset size
+        batch_size = min(4, total_images) # make sure batch_size doesn't exceed the number of images
+        
+        dataloader = DataLoader(
+            self.parent.dataset, 
+            batch_size=batch_size, 
+            pin_memory=True,
+            shuffle=False, 
+            num_workers=min(4, batch_size), # uses 4 workers maximum
+            persistent_workers=True
+        )
+        
+        for batch, (enface_fp, data, proj_map) in enumerate(dataloader):
 
-            enface = data_cls.enface
-            OCT = data_cls.OCT
-            OCTA = data_cls.OCTA
+            # Stop processing if stopped
+            if not self.running:
+                break  
             
-            data, proj_map = process_data(OCT, OCTA, 'cuda', use_proj_map=True, OCTA_proj_map=enface)
-            self.parent.image_list[i].cavf_pred_2D = self.parent.inference(data, proj_map)
-            self.parent.image_list[i].prediction = get_cavf_Sparse_RGBA(self.parent.image_list[i].cavf_pred_2D)
-            self.parent.image_list[i].model_output = get_cavf_RGB(self.parent.image_list[i].cavf_pred_2D)
+            # half precision
+            with autocast(dtype=torch.float16):
+                data = data[:,0,...].to(self.device)
+                proj_map = proj_map[:,0,...].to(self.device)
+                
+                cavf_pred, ava_pred, cavf_pred_2D, ava_pred_2D = self.parent.model(data, proj_map)
+                cavf_pred_2D = F.softmax(cavf_pred_2D, dim=1).to('cpu').numpy()
+
             
+            # save prediction and model_output to output folder
+            for i in range(len(enface_fp)):
+                enface_name = os.path.basename(enface_fp[i])
+                
+                prediction = get_cavf_Sparse_RGBA(cavf_pred_2D[i])
+                prediction = cv2.cvtColor(prediction, cv2.COLOR_BGRA2RGBA)
+                
+                model_output = get_cavf_RGB(cavf_pred_2D[i])
+                model_output = cv2.cvtColor(model_output, cv2.COLOR_BGR2RGB)
+                
+                enface = Read_Data(enface_fp[i]).get()
+                overlayed = overlay(enface, prediction)
+                
+                # write image to folder
+                cv2.imwrite(f'{self.parent.output_folder}/{enface_name}_prediction.png', prediction)
+                cv2.imwrite(f'{self.parent.output_folder}/{enface_name}_output.png', model_output)
+                cv2.imwrite(f'{self.parent.output_folder}/{enface_name}_overlay.png', overlayed)
+                
             # Update progress bar
-            progress = int((i + 1) / total_images * 100)
+            progress = int((batch + 1)*batch_size / total_images * 100)
             self.process.emit(progress)
         
+        self.process.emit(100)
         self.work_complete_signal.emit()  # Signal that work is done
+
 
     def stop(self):
         self.running = False  # Set flag to stop processing
@@ -145,6 +234,26 @@ def qpixmap_to_numpy(pixmap):
 
 
 
+# overlay the RGBA vessel map on top of the grayscale enface
+def overlay(enface, prediction):
+    # convert grayscale to rgb
+    enface = cv2.cvtColor(enface, cv2.COLOR_GRAY2RGB)  # Shape: (H, W, 3)
+    
+    # Resize prediction to match enface size
+    prediction = cv2.resize(prediction, (enface.shape[1], enface.shape[0]), interpolation=cv2.INTER_LINEAR)
+    
+    # Extract the RGB and Alpha channels separately
+    prediction_rgb = prediction[:, :, :3]  # RGB part
+    alpha = prediction[:, :, 3] / 255.0    # Normalize alpha to range [0,1]
+    
+    # Blend the images using alpha compositing
+    overlay = (1 - alpha[:, :, None]) * enface + alpha[:, :, None] * prediction_rgb
+    overlay = overlay.astype(np.uint8)  # Convert back to uint8 format
+    
+    return overlay
+
+
+
 def normalize(img):
     if type(img) == torch.Tensor:
         return (img - torch.min(img)) / (torch.max(img) - torch.min(img))
@@ -232,15 +341,16 @@ def get_ROI(img, target_depth=550):
 
 # process and concatenate OCT and OCTA image data 
 # calculate the projection map
-def process_data(OCT_img, OCTA_img, device, input_shape=(128, 256, 256), 
+def process_data(OCT_img, OCTA_img, input_shape=(128, 256, 256), 
                  roi_target_depth=550, use_proj_map = False, 
                  OCT_proj_map = None, OCTA_proj_map = None):
-    OCT_img = torch.from_numpy(OCT_img).unsqueeze(0).unsqueeze(0).to(device=device, dtype=torch.float32)
-    OCTA_img = torch.from_numpy(OCTA_img).unsqueeze(0).unsqueeze(0).to(device=device, dtype=torch.float32)
+    
+    OCT_img = torch.from_numpy(OCT_img).unsqueeze(0).unsqueeze(0).float()
+    OCTA_img = torch.from_numpy(OCTA_img).unsqueeze(0).unsqueeze(0).float()
     
 
     # concatenate the OCT and OCTA images along the channel dimension
-    data = torch.cat((OCT_img, OCTA_img), dim=1).to(device)
+    data = torch.cat((OCT_img, OCTA_img), dim=1)
     
     # get region of interest by cropping depth to target depth
     data = get_ROI(data, roi_target_depth)
@@ -269,12 +379,12 @@ def process_data(OCT_img, OCTA_img, device, input_shape=(128, 256, 256),
         if OCTA_proj_map is None:
             raise ValueError("OCTA projection map must be provided if use_proj_map is True")
         else:
-            OCTA_proj_map = torch.from_numpy(OCTA_proj_map).unsqueeze(0).unsqueeze(0).to(device, dtype=torch.float32)
+            OCTA_proj_map = torch.from_numpy(OCTA_proj_map).unsqueeze(0).unsqueeze(0)
         
         if OCT_proj_map is None:
             OCT_proj_map = torch.mean(data[0, 0, :, :, :], dim=0).unsqueeze(0).unsqueeze(0)
         else:
-            OCT_proj_map = torch.from_numpy(OCT_proj_map).unsqueeze(0).unsqueeze(0).to(device, dtype=torch.float32)
+            OCT_proj_map = torch.from_numpy(OCT_proj_map).unsqueeze(0).unsqueeze(0)
         
         
         # normalize the projection maps

@@ -1,36 +1,28 @@
-application_name = 'VasSeg V1.1'
+application_name = 'VasSeg V1.2'
 import ctypes
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(application_name)
 
 # pyqt packages
 from PyQt5 import uic
 from PyQt5.QtGui import QFont, QIcon, QPixmap, QImage, QPainter, QColor, QPalette
-from PyQt5.QtCore import pyqtSignal, Qt, QPointF, QEvent, QSize, QThread
-from PyQt5.QtWidgets import QLabel, QMainWindow, QApplication, QWidget, QLineEdit, QDesktopWidget, QFileDialog, QCheckBox, QTableWidgetItem, QMessageBox
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QTableWidgetItem
 
 # system packages
 import sys
 import os
-import time
 import cv2
-import numpy as np
 import torch
-import torch.nn.functional as F
 
 # custom packages
-import model # DL model
 from UI_utility import UI_Util
 from UI_manual import UI_Manual_Action
 from UI_import import UI_Select_Folder_Action
 from read_write import Read_Data, Load_Model
-from data_process import process_data, get_cavf_RGB, get_cavf_RGBA, get_cavf_Sparse_RGBA, ProcessThread
+from data_process import ProcessThread
 
 
-def setMouseTrackingRecursively(widget, enable):
-    widget.setMouseTracking(enable)
-    for child in widget.findChildren(QWidget):
-        setMouseTrackingRecursively(child, enable)
-        
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class QT_Action(QMainWindow):
@@ -43,14 +35,14 @@ class QT_Action(QMainWindow):
         self.setWindowIcon(QIcon('icons/UW.png')) # changed the window icon
         self.setWindowTitle(application_name) # set the title
         
-        #QApplication.instance().focusChanged.connect(self.on_focus_changed)
         self.setWindowState(Qt.WindowActive)
         
         # runtime variables
         self.default_dir = 'C'
         self.processed = False
         self.selected_row = None
-        self.image_list = [] # a list to keep all image_containers
+        self.output_folder = None
+        self.dataset = None # image dataset class
         
         self._load_model()
         
@@ -96,11 +88,10 @@ class QT_Action(QMainWindow):
         self.main_button_select_folder.clicked.connect(self.select_folder_action)
         self.button_process.clicked.connect(self.process_action)
         self.main_button_manual.clicked.connect(self.manual_correction_action)
-        self.button_export.clicked.connect(self.export_action)
         
         # checkbox
-        self.main_checkBox_model_output.toggled.connect(lambda: self.checkBox_model_output_action(True))
-        
+        self.main_checkBox_model_output.toggled.connect(self._update_display)
+
         # tablewidgets
         self.main_tableWidget.itemSelectionChanged.connect(self.tableWidget_selection_action)
         
@@ -108,12 +99,13 @@ class QT_Action(QMainWindow):
     
     # filling the tableWidget with file names
     def fill_tableWidget_action(self):
-        if not self.image_list:
+        if self.dataset is None:
             return
-        
-        self.main_tableWidget.setRowCount(len(self.image_list))
-        for i in range(len(self.image_list)):
-            self.main_tableWidget.setItem(i, 0, QTableWidgetItem(self.image_list[i].filename))
+
+        self.main_tableWidget.setRowCount(len(self.dataset))
+        for i in range(len(self.dataset)):
+            # get the enface filepath
+            self.main_tableWidget.setItem(i, 0, QTableWidgetItem(self.dataset.get_filepath(i)[2]))
             
     
     # selected a table cell, display the images
@@ -125,13 +117,6 @@ class QT_Action(QMainWindow):
         self.selected_row = self.main_tableWidget.selectedItems()[0].row()
         self._update_display()
     
-    # 
-    def checkBox_model_output_action(self, pressed=False):
-        if not self.processed:
-            self.main_checkBox_model_output.setChecked(False)
-            return
-        
-        self._update_display()
         
         
     # update the main display
@@ -140,9 +125,8 @@ class QT_Action(QMainWindow):
             return
         
         # displaying the enface image
-        enface = self.image_list[self.selected_row].enface
-        if enface is None:
-            return
+        enface_path = self.dataset.get_filepath(self.selected_row)[2]
+        enface = Read_Data(enface_path).get()
         
         # Convert the OpenCV image to QImage
         height, width = enface.shape
@@ -161,11 +145,18 @@ class QT_Action(QMainWindow):
         self.main_label_enface.setPixmap(scaled_pixmap)
         
         # displaying the prediction image
-        if self.image_list[self.selected_row].prediction is None:
+        if self.output_folder is None:
             return
         
-        elif not self.main_checkBox_model_output.isChecked():
-            color_img = self.image_list[self.selected_row].prediction
+        enface_name = os.path.basename(enface_path)
+        prediction_name = f'{enface_name}_prediction.png'
+        model_output_name = f'{enface_name}_output.png'
+        if not self.main_checkBox_model_output.isChecked() and prediction_name in os.listdir(self.output_folder):
+            color_img = cv2.imread(f'{self.output_folder}/{prediction_name}', cv2.IMREAD_UNCHANGED)
+            
+            # Convert from RGBA to BGRA
+            color_img = cv2.cvtColor(color_img, cv2.COLOR_BGRA2RGBA)
+            
             # Get grayscale image dimensions
             gray_height, gray_width = enface.shape[:2] 
             
@@ -192,13 +183,20 @@ class QT_Action(QMainWindow):
             # Convert back to QImage if needed
             qimage = final_pixmap.toImage()
             
-        else:
-            color_img = self.image_list[self.selected_row].model_output
+            
+        elif model_output_name in os.listdir(self.output_folder):
+            color_img = cv2.imread(f'{self.output_folder}/{model_output_name}', cv2.IMREAD_COLOR)
+            
+            # Convert from RGB to BGR
+            color_img = cv2.cvtColor(color_img, cv2.COLOR_RGB2BGR)
+
             height, width, channel = color_img.shape
     
             # Convert to QImage with RGBA format
             qimage = QImage(color_img.data, width, height, channel * width, QImage.Format_RGB888)
-            
+        
+        else:
+            return
             
         # Convert QImage to QPixmap and scale to fit label
         qpixmap = QPixmap.fromImage(qimage)
@@ -213,11 +211,10 @@ class QT_Action(QMainWindow):
         self.main_label_prediction.setPixmap(scaled_pixmap)
         
         
-        
     
     def _load_model(self):
         model_name = self.main_comboBox_model.currentText()
-        self.model = Load_Model(model_name, 'cuda').get()
+        self.model = Load_Model(model_name, device).get()
         self.model.eval() # set the model into the evaluation mode
         
     
@@ -228,6 +225,10 @@ class QT_Action(QMainWindow):
         # didn't select any files
         if directory_path is None or directory_path == '':
             return
+        
+        # create a output_folder
+        self.output_folder = f'{directory_path}/VasSeg_output'
+        os.makedirs(self.output_folder, exist_ok=True)
         
         self.main_lineEdit_folder.setText(directory_path)
         
@@ -251,15 +252,6 @@ class QT_Action(QMainWindow):
         new_window.exec_()
     
     
-    # Disable gradient calculations
-    @torch.no_grad()  
-    def inference(self, data, proj_map):
-        cavf_pred, ava_pred, cavf_pred_2D, ava_pred_2D = self.model(data, proj_map)
-        cavf_pred_2D = F.softmax(cavf_pred_2D, dim=1)
-        
-        return cavf_pred_2D.squeeze().to('cpu').numpy()
-    
-
     
     def process_action(self):
         def run():
@@ -267,7 +259,7 @@ class QT_Action(QMainWindow):
             self.button_process.setText('Stop')
             self.button_process.setChecked(True)
 
-            self.thread = ProcessThread(self)
+            self.thread = ProcessThread(self, device)
             return self.thread
     
         def stopped():
@@ -296,45 +288,6 @@ class QT_Action(QMainWindow):
             stopped()
     
 
-            
-    # export the the model output, the label overlay, and the label
-    def export_action(self):
-        if not self.processed:
-            UI_Util.show_message(self, title='Action Error', message='Please process first')
-            return
-        
-        root = self.main_lineEdit_folder.text()
-        
-        for img in self.image_list:
-            # BGR to RGB
-            model_output = img.model_output[...,::-1]
-            
-            # Resize img.enface to match img.prediction's dimensions
-            img_enface_resized = cv2.resize(img.enface, (img.prediction.shape[1], img.prediction.shape[0]))
-            
-            # Convert grayscale enface image to 3-channel (RGB)
-            img_enface_rgb = cv2.cvtColor(img_enface_resized, cv2.COLOR_GRAY2RGB)
-            
-            # Extract RGBA channels from prediction
-            pred_rgb = img.prediction[:, :, :3]  # RGB channels
-            alpha = img.prediction[:, :, 3] / 255.0  # Normalize alpha to [0,1]
-            
-            # Blend the images using alpha blending
-            overlayed = (1 - alpha[:, :, None]) * img_enface_rgb + alpha[:, :, None] * pred_rgb
-            overlayed = overlayed.astype(np.uint8)  # Convert to uint8
-            
-            
-            # Save the result
-            output_folder = os.path.join(root, img.filename.rsplit('.', 1)[0])
-            os.makedirs(output_folder, exist_ok=True)
-            cv2.imwrite(os.path.join(output_folder, 'model_output.png'), model_output)
-            cv2.imwrite(os.path.join(output_folder, 'mask.png'), img.prediction)
-            cv2.imwrite(os.path.join(output_folder, 'overlayed_image.png'), overlayed)
-        
-        # pop up message
-        if UI_Util.show_message_action(self, 'Done', 'Finished Exporting. Open Directory?', icon=QMessageBox.Information):
-            os.startfile(root)
-            
 
 def main():
     app = QApplication(sys.argv)
