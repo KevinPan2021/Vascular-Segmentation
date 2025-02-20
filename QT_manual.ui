@@ -631,6 +631,72 @@ QToolButton:disabled {
         </widget>
        </item>
        <item>
+        <widget class="QToolButton" name="button_clear_binary">
+         <property name="minimumSize">
+          <size>
+           <width>100</width>
+           <height>38</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>100</width>
+           <height>38</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <family>微软雅黑</family>
+           <pointsize>8</pointsize>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QToolButton {
+	color:white; 
+	background:qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0, 		stop:0 rgba(32, 38, 52, 255), 
+		stop:1 rgba(91, 99, 120, 255));
+	border: 2px solid black;
+	border-radius: 8px;
+}
+
+QToolButton:checked {
+	color:white; 
+	background-color: rgba(121, 129, 150, 255);
+	border: 2px solid black;
+	border-radius: 8px;
+	padding: 0;
+}
+
+QToolButton:disabled {
+	color:gray; 
+	background-color: rgba(32, 38, 52, 255);
+	border: 2px solid black;
+	border-radius: 8px;
+	padding: 0;
+}</string>
+         </property>
+         <property name="text">
+          <string>Clear Binary</string>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>icons/finish.png</normaloff>icons/finish.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>18</width>
+           <height>18</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>false</bool>
+         </property>
+         <property name="toolButtonStyle">
+          <enum>Qt::ToolButtonTextUnderIcon</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QToolButton" name="button_filter">
          <property name="minimumSize">
           <size>

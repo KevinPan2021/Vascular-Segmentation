@@ -199,6 +199,8 @@ class UI_Manual_Action(QDialog):
         prediction_name = f'{self.enface_name}_prediction.png'
         if prediction_name in os.listdir(self.parent_cls.output_folder):
             self.prediction = cv2.imread(f'{self.parent_cls.output_folder}/{prediction_name}', cv2.IMREAD_UNCHANGED)
+            # Convert from RGBA to BGRA
+            self.prediction = cv2.cvtColor(self.prediction, cv2.COLOR_BGRA2RGBA)
         else:
             self.prediction = None
             
@@ -222,6 +224,8 @@ class UI_Manual_Action(QDialog):
     def link_commands(self):
         self.button_binarize.clicked.connect(self.binarize_action)
         self.button_finish.clicked.connect(self.finish_action)
+        self.button_clear_binary.clicked.connect(self.clear_binary_action)
+        
         self.button_filter.clicked.connect(self.label_overlay.filter_action)
         self.button_clearall.clicked.connect(self.label_overlay.clear_action)
         
@@ -315,6 +319,16 @@ class UI_Manual_Action(QDialog):
         # update the displays
         self.update_vessel_mask_display()
         self.update_overlay_display()
+    
+    
+    def clear_binary_action(self):
+        
+        self.binary = np.ones_like(self.binary)
+            
+        # update the displays
+        self.update_vessel_mask_display()
+        self.update_overlay_display()
+        
         
         
     # Rescale overlay_pixmap, convert to NumPy, and save it

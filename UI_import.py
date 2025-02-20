@@ -201,16 +201,14 @@ class UI_Select_Folder_Action(QDialog):
     def select_all_action(self):
         # fill filenames and check box
         for i in range(self.tableWidget.rowCount()):
-            checkbox = self.tableWidget.cellWidget(i, 2).findChild(QCheckBox)
-            checkbox.setChecked(True)
+            self.tableWidget.item(i, 3).setCheckState(Qt.Checked)
         
         
     # pressed deselect_all button action
     def deselect_all_action(self):
         # fill filenames and check box
         for i in range(self.tableWidget.rowCount()):  
-            checkbox = self.tableWidget.cellWidget(i, 2).findChild(QCheckBox)
-            checkbox.setChecked(False)  # Check the checkbox
+            self.tableWidget.item(i, 3).setCheckState(Qt.Unchecked)
             
             
     # finish button pressed, save to data to main class and close the window

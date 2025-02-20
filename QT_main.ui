@@ -109,7 +109,7 @@ QToolButton:disabled {
           </property>
           <property name="icon">
            <iconset>
-            <normaloff>../../../pyoct/OCTA_PS_v1.0/code/icons/folder.png</normaloff>../../../pyoct/OCTA_PS_v1.0/code/icons/folder.png</iconset>
+            <normaloff>icons/folder.png</normaloff>icons/folder.png</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -629,8 +629,8 @@ QToolButton:disabled {
           </property>
           <property name="icon">
            <iconset>
-            <normaloff>../../../pyoct/OCTA_PS_v1.0/code/icons/start.png</normaloff>
-            <normalon>../../../pyoct/OCTA_PS_v1.0/code/icons/stop.png</normalon>../../../pyoct/OCTA_PS_v1.0/code/icons/start.png</iconset>
+            <normaloff>icons/start.png</normaloff>
+            <normalon>icons/stop.png</normalon>icons/start.png</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -702,8 +702,7 @@ QToolButton:disabled {
           </property>
           <property name="icon">
            <iconset>
-            <normaloff>../../../pyoct/OCTA_PS_v1.0/code/icons/start.png</normaloff>
-            <normalon>../../../pyoct/OCTA_PS_v1.0/code/icons/stop.png</normalon>../../../pyoct/OCTA_PS_v1.0/code/icons/start.png</iconset>
+            <normaloff>icons/RoI.png</normaloff>icons/RoI.png</iconset>
           </property>
           <property name="iconSize">
            <size>

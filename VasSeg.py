@@ -254,7 +254,22 @@ class QT_Action(QMainWindow):
     
     
     def process_action(self):
+        
+        if self.main_lineEdit_folder.text() == '':
+            self.button_process.setChecked(False)
+            UI_Util.show_message(self, title='Action Error', message='Please load images first')
+            return
+            
+            
+            
         def run():
+            
+            # ask if really need to (re)process
+            if not UI_Util.show_message_action(self, title='Run Check', message='Do you want to reprocess'):
+                self.button_process.setChecked(False)
+                return None
+            
+            
             self.processed = False
             self.button_process.setText('Stop')
             self.button_process.setChecked(True)
@@ -281,6 +296,10 @@ class QT_Action(QMainWindow):
         if self.button_process.text() == 'Process':
             
             self.task = run()
+            
+            if self.task is None:
+                return
+            
             self.task.process.connect(self.main_progressBar.setValue)  # Connect progress updates
             self.task.work_complete_signal.connect(finished)
             self.task.start()
