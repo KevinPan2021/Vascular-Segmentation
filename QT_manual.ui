@@ -365,7 +365,7 @@ QComboBox:disabled {
              </property>
              <item>
               <property name="text">
-               <string>Vein</string>
+               <string>Artery</string>
               </property>
               <property name="icon">
                <iconset>
@@ -374,7 +374,7 @@ QComboBox:disabled {
              </item>
              <item>
               <property name="text">
-               <string>Artery</string>
+               <string>Vein</string>
               </property>
               <property name="icon">
                <iconset>

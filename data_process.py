@@ -241,7 +241,6 @@ def overlay(enface, prediction):
     
     # Resize prediction to match enface size
     prediction = cv2.resize(prediction, (enface.shape[1], enface.shape[0]), interpolation=cv2.INTER_LINEAR)
-    #prediction = cv2.cvtColor(prediction, cv2.COLOR_BGRA2RGBA)  # Shape: (H, W, 3)
     
     # Extract the RGB and Alpha channels separately
     prediction_rgb = prediction[:, :, :3]  # RGB part

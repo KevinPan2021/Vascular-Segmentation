@@ -53,8 +53,8 @@ class DrawableLabel(QLabel):
 
             # Determine pen color
             color_map = {
-                'Vein': Qt.red,
-                'Artery': Qt.blue,
+                'Vein': Qt.blue,
+                'Artery': Qt.red,
                 'FOVA': Qt.green,
                 'None': Qt.transparent
             }
@@ -183,8 +183,8 @@ class DrawableLabel(QLabel):
         if self.cursor_position is not None:
             size = int(self.parent.lineEdit_pen_size.text())  # Get pen size
             color_map = {
-                'Vein': Qt.red,
-                'Artery': Qt.blue,
+                'Vein': Qt.blue,
+                'Artery': Qt.red,
                 'FOVA': Qt.green,
                 'None': Qt.white
             }
