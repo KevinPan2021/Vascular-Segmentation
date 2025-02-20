@@ -365,10 +365,10 @@ class UI_Manual_Action(QDialog):
         # Convert the resized pixmap to a NumPy array
         prediction = qpixmap_to_numpy(scaled_pixmap)
         
-        overlayed = overlay(self.enface, prediction)
-        
         # Convert from RGBA to BGRA
         prediction = cv2.cvtColor(prediction, cv2.COLOR_BGRA2RGBA)
+        
+        overlayed = overlay(self.enface, prediction)
         
         cv2.imwrite(f'{self.parent_cls.output_folder}/{self.enface_name}_prediction.png', prediction)
         cv2.imwrite(f'{self.parent_cls.output_folder}/{self.enface_name}_overlay.png', overlayed)
