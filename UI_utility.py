@@ -5,9 +5,6 @@ from PyQt5.QtWidgets import QMessageBox
 
 
 import configparser       
-import numpy as np
-import cv2
-import math
 import re
 
 

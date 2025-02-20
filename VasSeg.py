@@ -6,7 +6,7 @@ ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(application_name)
 from PyQt5 import uic
 from PyQt5.QtGui import QFont, QIcon, QPixmap, QImage, QPainter, QColor, QPalette
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QTableWidgetItem
+from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QTableWidgetItem, QHeaderView
 
 # system packages
 import sys
@@ -51,6 +51,7 @@ class QT_Action(QMainWindow):
         palette.setColor(QPalette.Background, QColor("white"))
         self.main_tableWidget.horizontalHeader().setAutoFillBackground(True)
         self.main_tableWidget.horizontalHeader().setPalette(palette)
+        
         
         
     '''
@@ -103,10 +104,12 @@ class QT_Action(QMainWindow):
             return
 
         self.main_tableWidget.setRowCount(len(self.dataset))
+        
         for i in range(len(self.dataset)):
             # get the enface filepath
             self.main_tableWidget.setItem(i, 0, QTableWidgetItem(self.dataset.get_filepath(i)[2]))
-            
+
+        
     
     # selected a table cell, display the images
     def tableWidget_selection_action(self):

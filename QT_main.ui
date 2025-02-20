@@ -250,6 +250,9 @@ QScrollBar:vertical {
              <property name="text">
               <string>Filenames</string>
              </property>
+             <property name="textAlignment">
+              <set>AlignCenter</set>
+             </property>
             </column>
            </widget>
           </item>

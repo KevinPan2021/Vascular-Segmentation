@@ -12,6 +12,7 @@ from skimage.morphology import remove_small_objects, label
 
 
 # custom package
+from UI_utility import UI_Util
 from Vessel_Extraction import Vessel_Quantification
 from read_write import Read_Data
 from data_process import qpixmap_to_numpy, overlay
@@ -22,6 +23,9 @@ class DrawableLabel(QLabel):
     def initialize(self, parent):
         self.parent = parent  # Store reference to the main UI class
         
+        # keep track of all actions (for undo)
+        self.list_overlay_pixmap = []
+        
         self.drawing = False
         self.last_point = QPoint()
         self.cursor_position = None  # Store cursor position for rendering
@@ -31,6 +35,14 @@ class DrawableLabel(QLabel):
         
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
+            # Save previous state for undo before starting a new drawing action
+            self.list_overlay_pixmap.append(self.parent.overlay_pixmap.copy())
+            
+            # can go back max_undo steps
+            max_undo = 50
+            while len(self.list_overlay_pixmap) >= max_undo:
+                self.list_overlay_pixmap.pop(0)
+
             self.drawing = True
             self.last_point = event.pos()
             
@@ -71,7 +83,7 @@ class DrawableLabel(QLabel):
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.drawing = False
-            
+        
             # Convert overlay to QImage
             overlay_image = self.parent.overlay_pixmap.toImage()
             binary_mask = self.parent.binary  # Get the latest binary mask
@@ -97,13 +109,24 @@ class DrawableLabel(QLabel):
             
             # Convert back to QPixmap
             self.parent.overlay_pixmap = QPixmap.fromImage(overlay_image)
+            
             self.update()  # Refresh QLabel
+    
+    
+    # undo the previous step
+    def undo_action(self):
+        if not self.list_overlay_pixmap:
+            UI_Util.show_message(self, title='Action Error', message='cannot go back further')
+            return
+        self.parent.overlay_pixmap = self.list_overlay_pixmap.pop()
+        self.update()  # Refresh QLabel
 
 
     # Clears the overlay pixmap (removes all drawings)
     def clear_action(self):
+        self.list_overlay_pixmap.append(self.parent.overlay_pixmap.copy())
         self.parent.overlay_pixmap.fill(Qt.transparent)  # Fill the pixmap with transparency
-        self.update()  # Refresh QLabel to reflect the cleared state
+        self.update()  # Refresh QLabel
 
     
     # Removes small disconnected dots in overlay_pixmap and restores transparency
@@ -206,6 +229,7 @@ class UI_Manual_Action(QDialog):
             
         self.binary = None
         
+        
         self.overlay_pixmap = QPixmap(self.label_overlay.size())  
         self.overlay_pixmap.fill(Qt.transparent)  # Transparent background
         
@@ -224,8 +248,9 @@ class UI_Manual_Action(QDialog):
     def link_commands(self):
         self.button_binarize.clicked.connect(self.binarize_action)
         self.button_finish.clicked.connect(self.finish_action)
-        self.button_clear_binary.clicked.connect(self.clear_binary_action)
+        self.button_fill_binary.clicked.connect(self.fill_binary_action)
         
+        self.button_undo.clicked.connect(self.label_overlay.undo_action)
         self.button_filter.clicked.connect(self.label_overlay.filter_action)
         self.button_clearall.clicked.connect(self.label_overlay.clear_action)
         
@@ -321,7 +346,7 @@ class UI_Manual_Action(QDialog):
         self.update_overlay_display()
     
     
-    def clear_binary_action(self):
+    def fill_binary_action(self):
         
         self.binary = np.ones_like(self.binary)
             
