@@ -110,7 +110,7 @@ class ProcessThread(QThread):
                 data = data[:,0,...].to(self.device)
                 proj_map = proj_map[:,0,...].to(self.device)
                 
-                cavf_pred, ava_pred, cavf_pred_2D, ava_pred_2D = self.parent.model(data, proj_map)
+                cavf_pred_2D = self.parent.model(data, proj_map)
                 cavf_pred_2D = F.softmax(cavf_pred_2D, dim=1).to('cpu').numpy()
 
             

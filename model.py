@@ -54,22 +54,15 @@ class Double3DConv(nn.Module):
 
 # IPN-V2
 class IPNV2(nn.Module):
-    def __init__(self, in_channels, n_classes, ava_classes=2, return_feature=False, dc_norms="NN"):
+    def __init__(self, in_channels, n_classes, dc_norms="NN"):
         super(IPNV2, self).__init__()
 
-        self.return_feature = return_feature 
         # Suppose input shape is (N, 2, 128, 100, 100) or (B, C, H, W, D)
         self.FPM1 = FPM(in_channels, 16, h=16)  # H: 128->8, C: 2->16
         self.FPM2 = FPM(16, 32, h=4)  # H: 8->2, C: 16->32
         self.FPM3 = FPM(32, 64, h=2)  # H: 2->1, C: 32->64
 
-        # (N, 64, 100, 100) -> (N, 5, 100, 100)
-        
-        # if ava_classes is not None:
-        self.SegNet2D = UNetAva(64, 128, n_classes, ava_classes, return_feature=return_feature, dc_norms=dc_norms)
-        # else:
-        #     raise NotImplementedError("Only supports UNetAva for now")
-        #     self.SegNet2D = UNet(64, 128, n_classes, return_feature=return_feature)  # H is squeezed, C -> n_classes: 64 -> 5        
+        self.SegNet2D = UNet(64, 128, n_classes, dc_norms = dc_norms)  # H is squeezed, C -> n_classes: 64 -> 5        
         
     def forward(self, x):
 
@@ -82,28 +75,12 @@ class IPNV2(nn.Module):
         return self.apply_head(x)
 
     def apply_head(self, x):
-        # if isinstance(self.SegNet2D, UNetAva):
-        if self.return_feature:
-            cavf, ava, feature = self.SegNet2D(x)
-        else:
-            cavf, ava = self.SegNet2D(x)
-        # else:
-        #     if self.return_feature:
-        #         cavf, feature = self.SegNet2D(x)
-        #     else:
-        #         cavf = self.SegNet2D(x)
-        #     ava = None
 
-        # logits_cavf = torch.unsqueeze(cavf, 2)
-        
-        # logits_ava = torch.unsqueeze(ava, 2) if ava is not None else None
-        logits_cavf = cavf
-        logits_ava = ava
-        
-        if self.return_feature:
-            return logits_cavf, logits_ava, feature
-        else:
-            return logits_cavf, logits_ava
+       
+        cavf = self.SegNet2D(x)
+        # cavf = torch.unsqueeze(cavf, 2)
+        return cavf
+
     
 class FPM(nn.Module):
     def __init__(self, in_channels, out_channels, h):
@@ -175,45 +152,27 @@ class FPM(nn.Module):
 
         return x
 
-class IPNV2_with_proj_map(IPNV2):
-    def __init__(self, in_channels, n_classes, proj_map_in_channels, ava_classes=2, 
-                 get_2D_pred=False, proj_vol_ratio=1, return_feature=False, dc_norms="NN"):
-        super(IPNV2_with_proj_map, self).__init__(in_channels, n_classes, ava_classes=ava_classes, return_feature=return_feature, dc_norms=dc_norms)
 
-        if proj_vol_ratio != 1:
-            # TODO: implement supporting other train ratios
-            assert proj_vol_ratio == 2, "Only supports 1 or 2"
-            
-            self.pm_downsize_conv = nn.Conv2d(proj_map_in_channels, 64, kernel_size=3, padding=1, stride=2)
-            self.proj_map_unet = UNet(64, 128, 64, return_feature=return_feature, dc_norms=dc_norms)
-        else:
-            self.pm_downsize_conv = None
-            self.proj_map_unet = UNet(proj_map_in_channels, 128, 64, return_feature=return_feature, dc_norms=dc_norms)
-            
+class IPNV2_with_proj_map(IPNV2):
+    def __init__(self, in_channels, n_classes, proj_map_in_channels, 
+                 get_2D_pred=False, dc_norms="NN"):
+        super(IPNV2_with_proj_map, self).__init__(in_channels, n_classes, dc_norms=dc_norms)
+
+        self.pm_downsize_conv = None
+        self.proj_map_unet = UNet(proj_map_in_channels, 128, 64, dc_norms=dc_norms)
         
         self.conv = DoubleConv2D(128, 64, norms=dc_norms)
        
         self.get_2D_pred = get_2D_pred
         if get_2D_pred:
-            # if ava_classes is not None:
-            self.head2D= UNetAva(64, 128, n_classes, ava_classes, dc_norms=dc_norms)
-            # else:
-            #     raise NotImplementedError("Only supports UNetAva for now")
-            #     self.head2D = UNet(64, 128, n_classes)  # H is squeezed, C -> n_classes: 64 -> 5   
+            self.head2D = UNet(64, 128, n_classes, dc_norms=dc_norms)
+
         
         
 
     def apply_2D_head(self, x):
-        # if isinstance(self.head2D, UNetAva):
-        logits_cavf, logits_ava = self.head2D(x)
-        # else:
-        #     cavf = self.head2D(x)
-        #     ava = None
-
-        # logits_cavf = torch.unsqueeze(cavf, 2)
-        # logits_ava = torch.unsqueeze(ava, 2) if ava is not None else None
         
-        return logits_cavf, logits_ava
+        return self.head2D(x)
     
     def forward(self, x, proj_map):
         x = self.FPM1(x)
@@ -222,95 +181,19 @@ class IPNV2_with_proj_map(IPNV2):
         # (B, 64, 1, H, W)
         
         x = torch.squeeze(x, 2)
-        
-        if self.pm_downsize_conv is not None:
-            # print("downsizing proj_map:", proj_map.shape)
-            proj_map = self.pm_downsize_conv(proj_map)
-            # print(proj_map.shape)
             
         proj_map_features = self.proj_map_unet(proj_map)
         
         x = torch.cat([x, proj_map_features], dim=1)
         x = self.conv(x)
+        
         if self.get_2D_pred:
             cavf3D_logits, ava3D_logits = self.apply_head(x)
             cavf2D_logits, ava2D_logits = self.apply_2D_head(proj_map_features)
             return cavf3D_logits, ava3D_logits, cavf2D_logits, ava2D_logits
         else:
-            if self.return_feature:
-                logits_cavf, logits_ava, featuers = self.apply_head(x)
-                return logits_cavf, logits_ava, featuers
-            else: 
-                return self.apply_head(x)
-
-
-        
-
-# class UNet(nn.Module):
-#     def __init__(self, in_channels, channels, n_classes, return_feature=False):
-#         """
-#         in_channels: number of input channels
-#         channels: number of channels in the hidden layers
-#         n_classes: number of output classes
-#         """
-#         super(UNet, self).__init__()
-#         self.return_feature = return_feature
-        
-#         # output dim change is just in_channels -> n_classes.
-#         # the H and W will be the same.
-
-#         self.in_channels = in_channels
-#         self.channels = channels
-#         self.n_classes = n_classes
-
-#         # convolution to increase channels while keeping h, w the same
-#         self.inc = DoubleConv2D(in_channels, channels)
-
-#         # each down layer is a convolutional one.
-#         # C -> C ; H -> floor(H/2) ; W -> floor(W/2)
-#         self.down1 = Down(channels, channels)
-#         self.down2 = Down(channels, channels)
-#         self.down3 = Down(channels, channels)
-#         self.down4 = Down(channels, channels)
-
-    
-#         # each up layer is either a upsampling bilinear layer or an ConvTranspose layer.
-#         # Channels kept the same, while H and W increase through same dims in down layers.
-#         self.up1 = Up(2*channels, channels)
-#         self.up2 = Up(2*channels, channels)
-#         self.up3 = Up(2*channels, channels)
-#         self.up4 = Up(2*channels, channels)
-
-#         # output has same dims as input except C -> n_classes.
-#         self.outc = DoubleConv2D(channels, n_classes)
-        
-    
-#     def get_feature(self, x):
-#         x1 = self.inc(x)  # (N, 64, 100, 100) -> (N, 128, 100, 100)
-
-#         x2 = self.down1(x1)  # (N, 128, 100, 100) -> (N, 128, 50, 50)
-#         x3 = self.down2(x2)  # (N, 128, 50, 50) -> (N, 128, 25, 25)
-#         x4 = self.down3(x3)  # (N, 128, 25, 25) -> (N, 128, 12, 12)
-#         x5 = self.down4(x4)  # (N, 128, 12, 12) -> (N, 128, 6, 6)
-
-#         x = self.up1(x5, x4)  # (N, 128, 6, 6) -> (N, 128, 12, 12)
-        
-#         x = self.up2(x, x3)  # (N, 128, 12, 12) -> (N, 128, 25, 25)
-#         x = self.up3(x, x2)  # (N, 128, 25, 25) -> (N, 128, 50, 50)
-#         feature = self.up4(x, x1)  # (N, 128, 50, 50) -> (N, 128, 100, 100)
-        
-#         return feature 
-
-#     def forward(self, x):
-
-#         feature = self.get_feature(x)
-#         logits_cavf = self.outc(feature)  # (N, 128, 100, 100) -> (N, 5, 100, 100)
-        
-#         if self.return_feature:
-#             return logits_cavf, feature
-#         else:
-#             return logits_cavf
-
+            
+            return self.apply_head(x)
 
 class UNet(nn.Module):
     def __init__(self, in_channels, channels, n_classes, return_feature=False, dc_norms="NN"):
