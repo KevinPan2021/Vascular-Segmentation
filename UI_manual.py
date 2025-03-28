@@ -1,6 +1,6 @@
 # pyqt packages
 from PyQt5 import uic
-from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter, QColor, QPen
+from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter, QColor, QPen, qAlpha
 from PyQt5.QtWidgets import QDialog, QLabel
 from PyQt5.QtCore import QPoint, Qt
 
@@ -332,7 +332,7 @@ class UI_Manual_Action(QDialog):
             qimage = QImage(color_image.data, width, height, bytes_per_line, QImage.Format_RGBA8888)
     
             # Resize cavf_pred_2D to match overlay_pixmap size
-            qimage = qimage.scaled(self.overlay_pixmap.size(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+            qimage = qimage.scaled(self.overlay_pixmap.size(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation) # FastTransformation
         
             # Draw onto overlay_pixmap
             painter = QPainter(self.overlay_pixmap)
@@ -355,13 +355,17 @@ class UI_Manual_Action(QDialog):
         self.update_overlay_display()
         
         
-        
+    
     # Rescale overlay_pixmap, convert to NumPy, and save it
     def finish_action(self):
+        print('before', set(qpixmap_to_numpy(self.overlay_pixmap)[...,3].flatten().tolist()))
         target_shape = self.enface.shape[:2]  # (height, width)
         
         # Resize overlay_pixmap to match cavf_pred_2D dimensions
         scaled_pixmap = self.overlay_pixmap.scaled(target_shape[1], target_shape[0], Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+        
+        print('after', set(qpixmap_to_numpy(scaled_pixmap)[...,3].flatten().tolist()))
+        
         # Convert the resized pixmap to a NumPy array
         prediction = qpixmap_to_numpy(scaled_pixmap)
         
@@ -376,5 +380,55 @@ class UI_Manual_Action(QDialog):
         # Update display
         self.parent_cls._update_display()
         self.close()
-
-        
+    '''
+    
+    def finish_action(self):
+        target_shape = self.enface.shape[:2]  # (height, width)
+    
+        # Convert QPixmap to QImage
+        overlay_image = self.overlay_pixmap.toImage().convertToFormat(QImage.Format_ARGB32)
+    
+        # Extract the alpha channel manually
+        width, height = overlay_image.width(), overlay_image.height()
+        alpha_array = np.zeros((height, width), dtype=np.uint8)
+    
+        for y in range(height):
+            for x in range(width):
+                pixel = overlay_image.pixel(x, y)
+                alpha_array[y, x] = qAlpha(pixel)  # Extract alpha value
+    
+        # Convert QImage without alpha to QPixmap
+        overlay_image_no_alpha = overlay_image.copy()
+        overlay_image_no_alpha = overlay_image_no_alpha.convertToFormat(QImage.Format_RGB32)
+        overlay_pixmap_no_alpha = QPixmap.fromImage(overlay_image_no_alpha)
+    
+        # Resize RGB smoothly
+        scaled_rgb_pixmap = overlay_pixmap_no_alpha.scaled(
+            target_shape[1], target_shape[0], Qt.IgnoreAspectRatio, Qt.SmoothTransformation
+        )
+    
+        # Resize alpha channel separately using nearest-neighbor (binary preservation)
+        scaled_alpha = cv2.resize(alpha_array, (target_shape[1], target_shape[0]), interpolation=cv2.INTER_NEAREST)
+    
+        # Convert resized RGB QPixmap to NumPy array
+        rgb_array = qpixmap_to_numpy(scaled_rgb_pixmap)
+    
+        # Ensure alpha is binary (0 or 255)
+        alpha_binary = np.where(scaled_alpha > 128, 255, 0).astype(np.uint8)
+    
+        # Merge RGB with binary alpha channel
+        prediction = cv2.merge((rgb_array[:, :, 0], rgb_array[:, :, 1], rgb_array[:, :, 2], alpha_binary))
+    
+        # Convert from RGBA to BGRA
+        prediction = cv2.cvtColor(prediction, cv2.COLOR_RGBA2BGRA)
+    
+        overlayed = overlay(self.enface, prediction)
+    
+        cv2.imwrite(f'{self.parent_cls.output_folder}/{self.enface_name}_prediction.png', prediction)
+        cv2.imwrite(f'{self.parent_cls.output_folder}/{self.enface_name}_overlay.png', overlayed)
+    
+        # Update display
+        self.parent_cls._update_display()
+        self.close()
+    '''
+            

@@ -15,37 +15,22 @@ from UI_utility import UI_Util
 
   
 
-class UI_Select_Folder_Action(QDialog):
+class UI_Vessel_Quant_Action(QDialog):
     
     def __init__(self, parent_cls):
-        super(UI_Select_Folder_Action, self).__init__()
-        uic.loadUi('QT_import.ui', self)
+        super(UI_Vessel_Quant_Action, self).__init__()
+        uic.loadUi('QT_vessel_quant.ui', self)
         self.setWindowIcon(QIcon('icons/UW.png'))
-        self.setWindowTitle('Import Folder')
+        self.setWindowTitle('Vessel Quantification')
         
         self.parent_cls = parent_cls
         self.tsv_dataset = None
         
         self.lineEdit_directory.setText(self.main_lineEdit_folder.text())
         
-        # fill the tablewidget
-        self.tableWidget.setColumnWidth(0, 525) # filename
-        self.tableWidget.setColumnWidth(1, 65) # group
-        self.tableWidget.setColumnWidth(2, 95) # data
-        self.tableWidget.setColumnWidth(3, 40)  # checkbox
-        
-        # collect all image files in the directory and group them
-        self.files = dict()
-        self._collect_files()
-        
-        # modify the tablewidget property
-        palette = self.tableWidget.horizontalHeader().palette()
-        palette.setColor(QPalette.Background, QColor("white"))
-        self.tableWidget.horizontalHeader().setAutoFillBackground(True)
-        self.tableWidget.horizontalHeader().setPalette(palette)
         
         # fill
-        self._fill_tableWidget()
+        #self._fill_tableWidget()
         
         
         
@@ -56,12 +41,7 @@ class UI_Select_Folder_Action(QDialog):
             
     # link the qt commands trigger to actions
     def link_commands(self):
-        self.button_select_all.clicked.connect(self.select_all_action)
-        self.button_deselect_all.clicked.connect(self.deselect_all_action)
-        self.button_finish.clicked.connect(self.finish_action)
-        self.button_load_tsv.clicked.connect(self._load_tsv_action)
-        
-        self.tableWidget.itemSelectionChanged.connect(self.tableWidget_selection_action)
+        ...
         
     
     # collect and group the files based on the filename
@@ -106,7 +86,7 @@ class UI_Select_Folder_Action(QDialog):
             self.files[octa_fp] = ['octa', group]
             
         # update the tablewidget
-        self._fill_tableWidget()
+        #self._fill_tableWidget()
         
     
     # filling the tableWidget based on self.files
