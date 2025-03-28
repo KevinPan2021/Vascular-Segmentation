@@ -1,4 +1,4 @@
-application_name = 'VasSeg V1.2'
+application_name = 'VasSeg V1.5'
 import ctypes
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(application_name)
 
@@ -18,6 +18,7 @@ import torch
 from UI_utility import UI_Util
 from UI_manual import UI_Manual_Action
 from UI_import import UI_Select_Folder_Action
+from UI_vessel_quant import UI_Vessel_Quant_Action
 from read_write import Read_Data, Load_Model
 from data_process import ProcessThread
 
@@ -89,6 +90,7 @@ class QT_Action(QMainWindow):
         self.main_button_select_folder.clicked.connect(self.select_folder_action)
         self.button_process.clicked.connect(self.process_action)
         self.main_button_manual.clicked.connect(self.manual_correction_action)
+        self.main_button_vessel_quant.clicked.connect(self.vessel_quant_action)
         
         # checkbox
         self.main_checkBox_model_output.toggled.connect(self._update_display)
@@ -255,7 +257,18 @@ class QT_Action(QMainWindow):
         new_window.exec_()
     
     
-    
+    def vessel_quant_action(self):
+        '''
+        if self.main_lineEdit_folder.text() == '':
+            UI_Util.show_message(self, title='Action Error', message='Please import first')
+            return
+        '''
+        new_window = UI_Vessel_Quant_Action(parent_cls = self)
+        new_window.link_commands()
+        new_window.exec_()
+        
+        
+        
     def process_action(self):
         
         if self.main_lineEdit_folder.text() == '':
