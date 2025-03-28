@@ -22,8 +22,7 @@ class Load_Model():
         if use_proj_map:
             cavf_model = IPNV2_with_proj_map(
                 in_channels=in_channels, n_classes=n_classes, 
-                proj_map_in_channels=2, ava_classes=ava_classes, 
-                get_2D_pred=get_2D_pred, dc_norms=dc_norms
+                proj_map_in_channels=2, dc_norms='NG'
             )
             
         else:
@@ -32,7 +31,7 @@ class Load_Model():
                 ava_classes=ava_classes, dc_norms=dc_norms
             )
         
-        state_dict = torch.load('290_noNorm.pth', map_location=torch.device('cuda'))
+        state_dict = torch.load('model_adapted_train_anno_best.pth', map_location=torch.device('cuda'))
         cavf_model.load_state_dict(state_dict)
         return cavf_model
     
