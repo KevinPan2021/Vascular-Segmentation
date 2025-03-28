@@ -21,7 +21,7 @@
 ### Code Structure:
 ```bash
 ├── VagSeg.py (Run to generate a GUI)
-├── model.py
+├── model_adapted_train_anno_best.pth
 ├── data_process.py
 ├── read_write.py
 ├── UI_import.py
