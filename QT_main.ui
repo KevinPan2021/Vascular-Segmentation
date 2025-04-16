@@ -777,7 +777,7 @@ QToolButton:disabled {
           </property>
           <property name="icon">
            <iconset>
-            <normaloff>icons/RoI.png</normaloff>icons/RoI.png</iconset>
+            <normaloff>icons/diagram.png</normaloff>icons/diagram.png</iconset>
           </property>
           <property name="iconSize">
            <size>

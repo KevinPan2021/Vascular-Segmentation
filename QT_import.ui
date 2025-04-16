@@ -6,19 +6,19 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1300</width>
+    <width>1400</width>
     <height>680</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>1300</width>
+    <width>1400</width>
     <height>680</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>1300</width>
+    <width>1400</width>
     <height>680</height>
    </size>
   </property>
@@ -94,6 +94,12 @@ QLineEdit:disabled {
         <layout class="QVBoxLayout" name="verticalLayout">
          <item>
           <widget class="QLabel" name="label_FileInfo_7">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>38</height>
+            </size>
+           </property>
            <property name="maximumSize">
             <size>
              <width>16777215</width>
@@ -121,14 +127,14 @@ QLineEdit:disabled {
           <widget class="QLabel" name="label_preview">
            <property name="minimumSize">
             <size>
-             <width>500</width>
-             <height>500</height>
+             <width>520</width>
+             <height>520</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>500</width>
-             <height>500</height>
+             <width>520</width>
+             <height>520</height>
             </size>
            </property>
            <property name="styleSheet">
@@ -145,6 +151,18 @@ QLineEdit:disabled {
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
           <widget class="QLabel" name="label_FileInfo_8">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>38</height>
+            </size>
+           </property>
            <property name="maximumSize">
             <size>
              <width>16777215</width>
@@ -172,14 +190,14 @@ QLineEdit:disabled {
           <widget class="QTableWidget" name="tableWidget">
            <property name="minimumSize">
             <size>
-             <width>750</width>
-             <height>500</height>
+             <width>0</width>
+             <height>0</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>750</width>
-             <height>500</height>
+             <width>16777215</width>
+             <height>16777215</height>
             </size>
            </property>
            <property name="font">
@@ -242,7 +260,7 @@ QScrollBar:vertical {
             <number>0</number>
            </property>
            <property name="columnCount">
-            <number>4</number>
+            <number>5</number>
            </property>
            <attribute name="horizontalHeaderCascadingSectionResizes">
             <bool>false</bool>
@@ -345,6 +363,23 @@ QScrollBar:vertical {
            </column>
            <column>
             <property name="text">
+             <string>FOV</string>
+            </property>
+            <property name="textAlignment">
+             <set>AlignCenter</set>
+            </property>
+            <property name="foreground">
+             <brush brushstyle="NoBrush">
+              <color alpha="255">
+               <red>255</red>
+               <green>255</green>
+               <blue>255</blue>
+              </color>
+             </brush>
+            </property>
+           </column>
+           <column>
+            <property name="text">
              <string>C</string>
             </property>
             <property name="textAlignment">
@@ -372,6 +407,13 @@ QScrollBar:vertical {
         </layout>
        </item>
       </layout>
+     </item>
+     <item>
+      <widget class="Line" name="line">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
      </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -666,17 +708,13 @@ QToolButton:disabled {
      </item>
     </layout>
    </item>
-   <item row="1" column="1">
-    <widget class="Line" name="line">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
    <item row="0" column="0">
     <spacer name="horizontalSpacer_3">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Minimum</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
@@ -690,6 +728,9 @@ QToolButton:disabled {
     <spacer name="horizontalSpacer_4">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Minimum</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>

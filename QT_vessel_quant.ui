@@ -836,7 +836,7 @@ QToolButton:disabled {
          </property>
          <property name="icon">
           <iconset>
-           <normaloff>icons/hide.png</normaloff>icons/hide.png</iconset>
+           <normaloff>icons/start.png</normaloff>icons/start.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -985,7 +985,7 @@ QToolButton:disabled {
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="button_finish_2">
+        <widget class="QToolButton" name="button_export">
          <property name="minimumSize">
           <size>
            <width>100</width>

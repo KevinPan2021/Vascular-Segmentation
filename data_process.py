@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch.cuda.amp import autocast
+from torch.amp import autocast
 from torch.utils.data import DataLoader
 from skimage.filters import threshold_otsu
 from torch.utils.data import Dataset
@@ -38,22 +38,41 @@ class Aireadi_Dataset(Dataset):
     
     
     def __getitem__(self, idx):
-        oct_fp, octa_fp, enface_fp = self.get_filepath(idx)
-        
-        OCT_img = Read_Data(oct_fp).get()
-        OCTA_img = Read_Data(octa_fp).get()
-        
-        OCT_img = OCT_img.transpose(1, 0, 2)
-        OCTA_img = OCTA_img.transpose(1, 0, 2)
+        oct_fp, octa_fp, enface_fp, FOV = self.get_filepath(idx)
         
         enface_img = Read_Data(enface_fp).get()
+        
+        # 3d oct data
+        if oct_fp is None:
+            OCT_img = np.random.randint(0, 256, (350, 1024, 350), dtype=np.uint8)
+        else:
+            OCT_img = Read_Data(oct_fp).get()
+            OCT_img = OCT_img.transpose(1, 0, 2)
+        
+        # 3d octa data
+        if octa_fp is None:
+            OCTA_img = np.random.randint(0, 256, (350, 1024, 350), dtype=np.uint8)
+        else:
+            OCTA_img = Read_Data(octa_fp).get()
+            OCTA_img = OCTA_img.transpose(1, 0, 2)
+        
+        
+        # FOV [1, 0, 0] -> 3mm * 3mm
+        # FOV [0, 1, 0] -> 6mm * 6mm
+        # FOV [0, 0, 1] -> 12mm * 12mm
+        if FOV == '3*3':
+            FOV_tensor = torch.tensor([1, 0, 0])
+        elif FOV == '6*6':
+            FOV_tensor = torch.tensor([0, 1, 0])
+        elif FOV == '12*12':
+            FOV_tensor = torch.tensor([0, 0, 1])
         
         data, proj_map = process_data(
             OCT_img=OCT_img, OCTA_img=OCTA_img, roi_target_depth=self.roi, 
             use_proj_map=True, OCTA_proj_map=enface_img
         )
         
-        return enface_fp, data, proj_map
+        return enface_fp, data, proj_map, FOV_tensor
     
     
     def get_filepath(self, idx):
@@ -64,13 +83,10 @@ class Aireadi_Dataset(Dataset):
         oct_fp = item['oct_path']
         octa_fp = item['octa_path']
         enface_fp = item['enface_path']
-        
-        return oct_fp, octa_fp, enface_fp
+        FOV = item['FOV']
+        return oct_fp, octa_fp, enface_fp, FOV
     
     
-    
-    
-
 
 class ProcessThread(QThread):
     process = pyqtSignal(int)  # Signal to update progress bar
@@ -99,20 +115,23 @@ class ProcessThread(QThread):
             persistent_workers=True
         )
         
-        for batch, (enface_fp, data, proj_map) in enumerate(dataloader):
+        for batch, (enface_fp, data, proj_map, FOV_tensor) in enumerate(dataloader):
 
             # Stop processing if stopped
             if not self.running:
                 break  
             
             # half precision
-            with autocast(dtype=torch.float16):
+            with autocast('cuda' if torch.cuda.is_available() else 'cpu', dtype=torch.float16):
                 data = data[:,0,...].to(self.device)
                 proj_map = proj_map[:,0,...].to(self.device)
                 
-                cavf_pred_2D = self.parent.model(data, proj_map)
+                
+                FOV_tensor = FOV_tensor.to(dtype=data.dtype, device=self.device)
+                
+                cavf_pred_2D = self.parent.model(data, proj_map, FOV_tensor)[0]
                 cavf_pred_2D = F.softmax(cavf_pred_2D, dim=1).to('cpu').numpy()
-
+            
             
             # save prediction and model_output to output folder
             for i in range(len(enface_fp)):

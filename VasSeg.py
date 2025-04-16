@@ -1,4 +1,4 @@
-application_name = 'VasSeg V1.5'
+application_name = 'VasSeg V1.6'
 import ctypes
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(application_name)
 
@@ -276,8 +276,7 @@ class QT_Action(QMainWindow):
             UI_Util.show_message(self, title='Action Error', message='Please load images first')
             return
             
-            
-            
+        
         def run():
             
             # ask if really need to (re)process

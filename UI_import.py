@@ -29,10 +29,11 @@ class UI_Select_Folder_Action(QDialog):
         self.lineEdit_directory.setText(self.main_lineEdit_folder.text())
         
         # fill the tablewidget
-        self.tableWidget.setColumnWidth(0, 525) # filename
-        self.tableWidget.setColumnWidth(1, 65) # group
-        self.tableWidget.setColumnWidth(2, 95) # data
-        self.tableWidget.setColumnWidth(3, 40)  # checkbox
+        self.tableWidget.setColumnWidth(0, 495) # filename
+        self.tableWidget.setColumnWidth(1, 50) # group
+        self.tableWidget.setColumnWidth(2, 85) # category
+        self.tableWidget.setColumnWidth(3, 85) # FOV
+        self.tableWidget.setColumnWidth(4, 35)  # checkbox
         
         # collect all image files in the directory and group them
         self.files = dict()
@@ -124,22 +125,34 @@ class UI_Select_Folder_Action(QDialog):
         
                 # Third column - Use pre-created QComboBox
                 self.tableWidget.setItem(i, 2, QTableWidgetItem(category))  # Use pre-created ComboBox
-        
-                # Fourth column - Checkbox
+                
+                # Fourth column - FOV
+                self.tableWidget.setItem(i, 3, QTableWidgetItem('3'))
+                
+                # Fifth column - process Checkbox
                 checkbox_item = QTableWidgetItem()
                 checkbox_item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
                 checkbox_item.setCheckState(Qt.Checked)
-                self.tableWidget.setItem(i, 3, checkbox_item)
+                self.tableWidget.setItem(i, 4, checkbox_item)
                 
         # no tsv file, need to group and set category 
         else:
-            combo_options = ["enface", "oct", "octa"]
-            combo_boxes = [QComboBox() for _ in range(len(self.files))]  # Pre-create ComboBoxes
+            category_combo_options = ["enface", "oct", "octa"]
+            category_combo_boxes = [QComboBox() for _ in range(len(self.files))]  # Pre-create ComboBoxes
             
-            for combo_box in combo_boxes:  # Populate ComboBoxes before loop
-                combo_box.addItems(combo_options)
+            FOV_combo_options = ["3*3", "6*6", "12*12"]
+            FOV_combo_boxes = [QComboBox() for _ in range(len(self.files))]  # Pre-create ComboBoxes
+            
+            # Populate ComboBoxes before loop
+            for combo_box in category_combo_boxes:  
+                combo_box.addItems(category_combo_options)
                 combo_box.setStyleSheet("color: white")  # Set style once
-        
+            
+            for combo_box in FOV_combo_boxes:  
+                combo_box.addItems(FOV_combo_options)
+                combo_box.setStyleSheet("color: white")  # Set style once
+                
+            
             for i, (file, [category, groupID]) in enumerate(self.files.items()):
                 # First column - filename
                 self.tableWidget.setItem(i, 0, QTableWidgetItem(file))
@@ -150,17 +163,24 @@ class UI_Select_Folder_Action(QDialog):
                 self.tableWidget.setCellWidget(i, 1, line_edit)
         
                 # Third column - Use pre-created QComboBox
-                combo_box = combo_boxes[i]  # Get the corresponding QComboBox
+                combo_box = category_combo_boxes[i]  # Get the corresponding QComboBox
                 index = combo_box.findText(category)  # Find the index of the category
                 if index != -1:
                     combo_box.setCurrentIndex(index)  # Set the default selection to category
                 self.tableWidget.setCellWidget(i, 2, combo_box)  # Use pre-created ComboBox
         
-                # Fourth column - Checkbox
+                # Fourth column - FOV
+                combo_box = FOV_combo_boxes[i]  # Get the corresponding QComboBox
+                index = combo_box.findText(category)  # Find the index of the category
+                if index != -1:
+                    combo_box.setCurrentIndex(index)  # Set the default selection to category
+                self.tableWidget.setCellWidget(i, 3, combo_box)  # Use pre-created ComboBox
+                
+                # Fifth column - Checkbox
                 checkbox_item = QTableWidgetItem()
                 checkbox_item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
                 checkbox_item.setCheckState(Qt.Checked)
-                self.tableWidget.setItem(i, 3, checkbox_item)
+                self.tableWidget.setItem(i, 4, checkbox_item)
 
 
         
@@ -223,7 +243,7 @@ class UI_Select_Folder_Action(QDialog):
                 break
             
             # current row must be checked
-            if self.tableWidget.item(i, 3).checkState():
+            if self.tableWidget.item(i, 4).checkState():
                 # choose the group, add new key in data_list for new group
                 group = None
                 if self.tsv_dataset:
@@ -231,7 +251,7 @@ class UI_Select_Folder_Action(QDialog):
                 else:
                     group = self.tableWidget.cellWidget(i, 1).text()
                 if not group in data_map:
-                    data_map[group] = {'enface_path': None, 'oct_path': None, 'octa_path':None}
+                    data_map[group] = {'enface_path': None, 'oct_path': None, 'octa_path':None, 'FOV':None}
                 
                 # choose the category
                 category = None
@@ -248,7 +268,10 @@ class UI_Select_Folder_Action(QDialog):
                     data_map[group]['oct_path'] = file_path
                 else:
                     data_map[group]['octa_path'] = file_path
-        
+                
+                # choose the FOV
+                data_map[group]['FOV'] = self.tableWidget.cellWidget(i, 3).currentText()
+                
         # load data_list into Aireadi_Dataset class
         self.parent_cls.dataset = Aireadi_Dataset(data_map, roi=550)
         

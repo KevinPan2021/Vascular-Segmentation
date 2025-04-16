@@ -6,7 +6,8 @@ import pandas as pd
 import os
 
 # custom package
-from model import IPNV2, IPNV2_with_proj_map
+#from model import IPNV2, IPNV2_with_proj_map
+from model_FiLM import IPNV2, IPNV2_with_proj_map
 
 
 # load the model into device
@@ -16,38 +17,40 @@ class Load_Model():
         self.device = device
         self.model = None
         
-        
-    # IPNV2 model
-    def load_IPNV2(self, in_channels, n_classes, ava_classes, get_2D_pred, dc_norms, use_proj_map=True):
+
+    
+    def load_ssl(self, in_channels, n_classes, get_2D_pred, dc_norms, use_proj_map=True):
         if use_proj_map:
             cavf_model = IPNV2_with_proj_map(
-                in_channels=in_channels, n_classes=n_classes, 
-                proj_map_in_channels=2, dc_norms='NG'
+                in_channels, n_classes, proj_map_in_channels=2, 
+                get_2D_pred=get_2D_pred, dc_norms=dc_norms
             )
-            
         else:
-            cavf_model = IPNV2(
-                in_channels=in_channels, n_classes=n_classes, 
-                ava_classes=ava_classes, dc_norms=dc_norms
-            )
-        
-        state_dict = torch.load('model_adapted_train_anno_best.pth', map_location=torch.device('cuda'))
+            cavf_model = IPNV2(in_channels, n_classes)
+            
+        state_dict = torch.load(
+            'ssl_0.999alpha_multi_resolution_model.pth', 
+            map_location=torch.device('cuda'), 
+            weights_only=False
+        )['teacher']
         cavf_model.load_state_dict(state_dict)
         return cavf_model
+    
     
     
     # retrieve the model
     def get(self):
         if self.name == 'IPNV2':
-            self.model = self.load_IPNV2(
-                in_channels=2, n_classes=5, ava_classes=2, get_2D_pred=True, 
-                dc_norms='NN', use_proj_map=True
+            self.model = self.load_ssl(
+                in_channels=2, n_classes=5, get_2D_pred=True, 
+                dc_norms='NG', use_proj_map=True
             )
-        
         self.model = self.model.to(self.device)
         
         return self.model
     
+
+
     
     
     
