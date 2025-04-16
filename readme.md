@@ -3,25 +3,25 @@
 
 ### Build: 
 
-	CPU: Intel i9-13900H (14 cores)
-	GPU: NVIDIA RTX 4060 (VRAM 8 GB)
+	CPU: Intel Core Ultra 9 185H (16 cores)
+	GPU: NVIDIA RTX 4090 (VRAM 16 GB)
 	RAM: 32 GB
+	Screen: 2560 x 1600 (150% Scale)
 
 
 
 ### Python Packages:
 
-	conda install pytorch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 pytorch-cuda=12.1 -c pytorch -c nvidia
-	conda install -c conda-forge tqdm = 4.64.1
-	conda install -c conda-forge matplotlib = 3.8.0
+	conda install pytorch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 pytorch-cuda=12.4 -c pytorch -c nvidia
+	conda install -c conda-forge tqdm = 4.66.5
+	conda install -c conda-forge matplotlib = 3.9.2
 	conda install -c conda-forge numpy = 1.26.4
-
 
 
 ### Code Structure:
 ```bash
 ├── VagSeg.py (Run to generate a GUI)
-├── model_adapted_train_anno_best.pth
+├── ssl_0.999alpha_multi_resolution_model.pth
 ├── data_process.py
 ├── read_write.py
 ├── UI_import.py
