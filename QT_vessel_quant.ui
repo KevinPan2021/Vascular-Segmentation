@@ -787,7 +787,7 @@ QLineEdit:disabled {
         </spacer>
        </item>
        <item>
-        <widget class="QToolButton" name="button_deselect_all">
+        <widget class="QToolButton" name="button_process">
          <property name="minimumSize">
           <size>
            <width>100</width>

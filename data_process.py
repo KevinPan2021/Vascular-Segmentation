@@ -47,14 +47,12 @@ class Aireadi_Dataset(Dataset):
             OCT_img = np.random.randint(0, 256, (350, 1024, 350), dtype=np.uint8)
         else:
             OCT_img = Read_Data(oct_fp).get()
-            OCT_img = OCT_img.transpose(1, 0, 2)
         
         # 3d octa data
         if octa_fp is None:
             OCTA_img = np.random.randint(0, 256, (350, 1024, 350), dtype=np.uint8)
         else:
             OCTA_img = Read_Data(octa_fp).get()
-            OCTA_img = OCTA_img.transpose(1, 0, 2)
         
         
         # FOV [1, 0, 0] -> 3mm * 3mm
@@ -125,8 +123,6 @@ class ProcessThread(QThread):
             with autocast('cuda' if torch.cuda.is_available() else 'cpu', dtype=torch.float16):
                 data = data[:,0,...].to(self.device)
                 proj_map = proj_map[:,0,...].to(self.device)
-                
-                
                 FOV_tensor = FOV_tensor.to(dtype=data.dtype, device=self.device)
                 
                 cavf_pred_2D = self.parent.model(data, proj_map, FOV_tensor)[0]
@@ -305,8 +301,8 @@ def get_ROI(img, target_depth=550):
     OCTA_img = img[0, 1, :, :, :]
     
 
-    thresh_OCT = threshold_otsu(OCT_img.cpu().numpy())
-    thresh_OCTA = threshold_otsu(OCTA_img.cpu().numpy())
+    thresh_OCT = threshold_otsu(OCT_img.numpy())
+    thresh_OCTA = threshold_otsu(OCTA_img.numpy())
     
     mask_OCT = OCT_img > thresh_OCT
     mask_OCTA = OCTA_img > thresh_OCTA
@@ -372,7 +368,7 @@ def process_data(OCT_img, OCTA_img, input_shape=(128, 256, 256),
     data = torch.cat((OCT_img, OCTA_img), dim=1)
     
     # get region of interest by cropping depth to target depth
-    data = get_ROI(data, roi_target_depth)
+    #data = get_ROI(data, roi_target_depth)
     
     # normalize the data along channels
     for i in range(data.shape[1]):

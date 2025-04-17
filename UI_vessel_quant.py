@@ -41,52 +41,12 @@ class UI_Vessel_Quant_Action(QDialog):
             
     # link the qt commands trigger to actions
     def link_commands(self):
+        self.button_process.clicked.connect(self.process_action)
+        
+    
+    
+    def process_action(self):
         ...
-        
-    
-    # collect and group the files based on the filename
-    def _collect_files(self):
-        group_name = dict()
-        for file in os.listdir(self.lineEdit_directory.text()):
-            if file.endswith(('.png', '.jpg', '.tiff', '.tif', '.dcm', 'avi')):
-                name = file.replace('enface','').replace('octa','').replace('oct','')
-                if name not in group_name:
-                    group_name[name] = len(group_name)
-                
-                if 'enface' in file:
-                    self.files[f'{self.lineEdit_directory.text()}/{file}'] = ['enface', group_name[name]]
-                elif 'octa' in file:
-                    self.files[f'{self.lineEdit_directory.text()}/{file}'] = ['octa', group_name[name]]
-                else:
-                    self.files[f'{self.lineEdit_directory.text()}/{file}'] = ['oct', group_name[name]]
-                    
-    
-    # clicked on the load tsv button, 
-    def _load_tsv_action(self):
-        file_path = QFileDialog.getOpenFileName(None, "Select a File", "", "All Files (*)")[0]
-        
-        self.files = dict()
-        
-        # didn't select any files
-        if file_path is None or file_path == '':
-            return
-        
-        # wrong format
-        if not file_path.endswith('.tsv'):
-            UI_Util.show_message(self, title='Action Error', message='File must be tsv')
-            return
-        
-        self.tsv_dataset = load_tsv(file_path)
-        
-        for group in range(len(self.tsv_dataset)):
-        #for group in range(10):
-            oct_fp, octa_fp, enface_fp = self.tsv_dataset.get_filepath(group)
-            self.files[enface_fp] = ['enface', group]
-            self.files[oct_fp] = ['oct', group]
-            self.files[octa_fp] = ['octa', group]
-            
-        # update the tablewidget
-        #self._fill_tableWidget()
         
     
     # filling the tableWidget based on self.files
