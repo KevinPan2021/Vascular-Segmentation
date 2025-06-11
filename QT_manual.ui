@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1250</width>
+    <width>1230</width>
     <height>1000</height>
    </rect>
   </property>
@@ -18,13 +18,13 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>1250</width>
+    <width>1230</width>
     <height>1000</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>1250</width>
+    <width>1230</width>
     <height>1000</height>
    </size>
   </property>
@@ -78,14 +78,14 @@
             <widget class="QLabel" name="label_enface">
              <property name="minimumSize">
               <size>
-               <width>340</width>
-               <height>340</height>
+               <width>330</width>
+               <height>330</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>340</width>
-               <height>340</height>
+               <width>330</width>
+               <height>330</height>
               </size>
              </property>
              <property name="styleSheet">
@@ -135,14 +135,14 @@
             <widget class="QLabel" name="label_vessel_mask">
              <property name="minimumSize">
               <size>
-               <width>340</width>
-               <height>340</height>
+               <width>330</width>
+               <height>330</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>340</width>
-               <height>340</height>
+               <width>330</width>
+               <height>330</height>
               </size>
              </property>
              <property name="styleSheet">
@@ -190,6 +190,12 @@
            </item>
            <item>
             <widget class="QLineEdit" name="lineEdit_binary_threshold">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="minimumSize">
               <size>
                <width>0</width>
@@ -262,6 +268,12 @@ QLineEdit:disabled {
            </item>
            <item>
             <widget class="QLineEdit" name="lineEdit_filter_area">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="minimumSize">
               <size>
                <width>0</width>
@@ -334,6 +346,12 @@ QLineEdit:disabled {
            </item>
            <item>
             <widget class="QComboBox" name="comboBox_type">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="minimumSize">
               <size>
                <width>130</width>
@@ -438,6 +456,12 @@ QComboBox:disabled {
            </item>
            <item>
             <widget class="QLineEdit" name="lineEdit_pen_size">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="minimumSize">
               <size>
                <width>0</width>
@@ -473,6 +497,51 @@ QLineEdit:disabled {
              </property>
              <property name="readOnly">
               <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_8">
+           <item>
+            <widget class="QLabel" name="label_FileInfo_14">
+             <property name="minimumSize">
+              <size>
+               <width>150</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>150</width>
+               <height>38</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>微软雅黑</family>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color:rgb(255,255,255);</string>
+             </property>
+             <property name="text">
+              <string>Overlay</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="checkBox_overlay">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -565,7 +634,7 @@ QLineEdit:disabled {
         </spacer>
        </item>
        <item>
-        <widget class="QToolButton" name="button_binarize">
+        <widget class="QToolButton" name="button_process">
          <property name="minimumSize">
           <size>
            <width>100</width>
@@ -610,7 +679,7 @@ QToolButton:disabled {
 }</string>
          </property>
          <property name="text">
-          <string>Binarize</string>
+          <string>Process</string>
          </property>
          <property name="icon">
           <iconset>
@@ -940,7 +1009,7 @@ QToolButton:disabled {
 }</string>
          </property>
          <property name="text">
-          <string>Finish</string>
+          <string>Save + Close</string>
          </property>
          <property name="icon">
           <iconset>

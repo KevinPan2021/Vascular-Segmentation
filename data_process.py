@@ -11,7 +11,7 @@ from torch.amp import autocast
 from torch.utils.data import DataLoader
 from skimage.filters import threshold_otsu
 from torch.utils.data import Dataset
-
+from sklearn.neighbors import KNeighborsClassifier
 
 from read_write import Read_Data
 
@@ -90,12 +90,11 @@ class ProcessThread(QThread):
     process = pyqtSignal(int)  # Signal to update progress bar
     work_complete_signal = pyqtSignal()  # Signal when work is finished
 
-    def __init__(self, parent, device):
+    def __init__(self, parent=None, device=None):
         super().__init__()
         self.parent = parent
         self.running = True  # Flag to control stopping
         self.device = device
-        
         
     
     @torch.no_grad() # Disable gradient calculations
@@ -133,7 +132,12 @@ class ProcessThread(QThread):
             for i in range(len(enface_fp)):
                 enface_name = os.path.basename(enface_fp[i])
                 
-                prediction = get_cavf_Sparse_RGBA(cavf_pred_2D[i])
+                pred3d_argmax = np.argmax(cavf_pred_2D[i], axis=0)
+                
+                calc_save_mask_AVA(pred3d_argmax, self.parent.output_folder, enface_name)
+                                   
+
+                prediction = get_cavf_Sparse_RGBA(cavf_pred_2D[i])                
                 prediction = cv2.cvtColor(prediction, cv2.COLOR_BGRA2RGBA)
                 
                 model_output = get_cavf_RGB(cavf_pred_2D[i])
@@ -143,10 +147,16 @@ class ProcessThread(QThread):
                 overlayed = overlay(enface, prediction)
                 
                 # write image to folder
-                cv2.imwrite(f'{self.parent.output_folder}/{enface_name}_prediction.png', prediction)
-                cv2.imwrite(f'{self.parent.output_folder}/{enface_name}_output.png', model_output)
-                cv2.imwrite(f'{self.parent.output_folder}/{enface_name}_overlay.png', overlayed)
+                filename_no_ext = os.path.splitext(os.path.basename(enface_name))[0]
+                output_folder = f'{self.parent.output_folder}/{filename_no_ext}'
                 
+                if not cv2.imwrite(f'{output_folder}/prediction.png', prediction):
+                    raise Exception('file saving error')
+                if not cv2.imwrite(f'{output_folder}/output.png', model_output):
+                    raise Exception('file saving error')
+                if not cv2.imwrite(f'{output_folder}/overlay.png', overlayed):
+                    raise Exception('file saving error')
+                    
             # Update progress bar
             progress = int((batch + 1)*batch_size / total_images * 100)
             self.process.emit(progress)
@@ -160,6 +170,102 @@ class ProcessThread(QThread):
 
 
 
+# only keep the largest area and fill holes
+def FAZ_mask_process(img):
+    # Find all connected components
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(img, connectivity=8)
+
+    # Ignore background (label 0), find the label with the largest area
+    if num_labels <= 1:
+        return np.zeros_like(img)
+
+    largest_label = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
+    largest_component = (labels == largest_label).astype(np.uint8)
+
+    # Fill holes inside the largest component
+    # Invert the image to find holes
+    holes = cv2.bitwise_not(largest_component * 255)
+    contours, _ = cv2.findContours(holes, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for cnt in contours:
+        if cv2.pointPolygonTest(cnt, (0, 0), False) < 0:  # skip outer contour
+            cv2.drawContours(largest_component, [cnt], -1, 1, -1)
+
+    # Convert back to 0/255 format
+    result = (largest_component * 255).astype(np.uint8)
+    return result
+    
+
+# uses KNN to determine the artery and vein zone
+def generat_AVA_map(image, vein_mask, artery_mask, FAZ_mask, k=5):
+    H, W = image.shape
+ 
+    artery_coords = np.vstack(np.argwhere(image == 2))
+    vein_coords = np.vstack(np.argwhere(image == 3))
+ 
+ 
+    train_data = np.concatenate((artery_coords, vein_coords), axis = 0).astype(np.float32)
+ 
+    labels = np.concatenate( (np.zeros(len(artery_coords)), np.ones(len(vein_coords))) ).astype(np.int32)
+ 
+    knn = KNeighborsClassifier(n_neighbors=k)
+    knn.fit(train_data, labels)
+ 
+ 
+    grid_coords = np.meshgrid(np.arange(H), np.arange(W), indexing='ij')
+    grid_coords = np.stack(grid_coords, axis=-1).reshape(-1, 2).astype(np.float32)
+    result = knn.predict(grid_coords).reshape(H, W)
+    
+    # Create an empty RGB image (height, width, 3)
+    AVA_map = np.zeros((result.shape[0], result.shape[1], 3), dtype=np.uint8)
+    
+    # Set blue for 0s
+    AVA_map[result == 0] = [100, 100, 255]  # Blue
+    
+    # Set red for 1s
+    AVA_map[result == 1] = [255, 100, 100]  # Red
+    
+    # overlay on vein / artery
+    AVA_map[vein_mask==255] *= np.array([1, 0, 0], dtype=np.uint8)
+    AVA_map[artery_mask==255] *= np.array([0, 0, 1], dtype=np.uint8)
+    AVA_map[FAZ_mask==255] *= np.array([0, 1, 0], dtype=np.uint8)
+    AVA_map[FAZ_mask==255] += np.array([0, 155, 0], dtype=np.uint8)
+    
+    return AVA_map
+
+
+
+def calc_save_mask_AVA(pred3d_argmax, output_path, enface_name, manual=False):
+    # capillary, vein, artery, FAZ masks
+    capillary_mask = (pred3d_argmax == 1).astype(np.uint8) * 255
+    vein_mask = (pred3d_argmax == 3).astype(np.uint8) * 255
+    artery_mask = (pred3d_argmax == 2).astype(np.uint8) * 255
+    FAZ_mask = (pred3d_argmax == 4).astype(np.uint8) * 255
+    FAZ_mask = FAZ_mask_process(FAZ_mask)
+    
+    # AVA map
+    AVA_map = generat_AVA_map(pred3d_argmax, vein_mask, artery_mask, FAZ_mask)
+    
+    # write image to folder
+    filename_no_ext = os.path.splitext(os.path.basename(enface_name))[0]
+    output_folder = f'{output_path}/{filename_no_ext}'
+    
+    suffix = ''
+    if manual:
+        suffix = '_manual'
+        
+    if not cv2.imwrite(f'{output_folder}/vein_mask{suffix}.png', vein_mask):
+        raise Exception('file saving error')
+    if not cv2.imwrite(f'{output_folder}/artery_mask{suffix}.png', artery_mask):
+        raise Exception('file saving error')
+    if not cv2.imwrite(f'{output_folder}/capillary_mask{suffix}.png', capillary_mask):
+        raise Exception('file saving error')
+    if not cv2.imwrite(f'{output_folder}/FAZ_mask{suffix}.png', FAZ_mask):
+        raise Exception('file saving error')
+    if not cv2.imwrite(f'{output_folder}/AVA_map{suffix}.png', AVA_map):
+        raise Exception('file saving error')
+            
+            
+            
         
 # convert image into RGB
 # image should have 3 dimensions (channel, weight, height)
@@ -191,7 +297,6 @@ def get_cavf_RGBA(image):
     # Apply mask to set RGB and alpha to 0
     RGBA_img[mask] = [0, 0, 0, 0]
     
-    
     return RGBA_img.astype(np.uint8)
 
 
@@ -212,7 +317,6 @@ def get_cavf_Sparse_RGBA(image):
     
     # Apply mask to set RGB and alpha to 0
     RGBA_img[mask] = [0, 0, 0, 0]
-    
     
     # Separate RGB and Alpha channels
     rgb = RGBA_img[..., :3]  # Extract RGB channels

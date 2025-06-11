@@ -20,7 +20,7 @@ class UI_Select_Folder_Action(QDialog):
     def __init__(self, parent_cls):
         super(UI_Select_Folder_Action, self).__init__()
         uic.loadUi('QT_import.ui', self)
-        self.setWindowIcon(QIcon('icons/UW.png'))
+        self.setWindowIcon(QIcon('icons/logo.png'))
         self.setWindowTitle('Import Folder')
         
         self.parent_cls = parent_cls
@@ -69,18 +69,32 @@ class UI_Select_Folder_Action(QDialog):
     def _collect_files(self):
         group_name = dict()
         for file in os.listdir(self.lineEdit_directory.text()):
-            if file.endswith(('.png', '.jpg', '.tiff', '.tif', '.dcm', 'avi')):
+            if file.endswith(('.png', '.jpg', '.tiff', '.tif', '.dcm', '.avi', '.bmp')):
+                file_extension = os.path.splitext(file)[1].lower().lstrip('.').lstrip('.')
+                
                 name = file.replace('enface','').replace('octa','').replace('oct','')
                 if name not in group_name:
                     group_name[name] = len(group_name)
                 
-                if 'enface' in file:
-                    self.files[f'{self.lineEdit_directory.text()}/{file}'] = ['enface', group_name[name]]
+                # set category
+                category = None
+                if file_extension != 'dcm' or 'enface' in file:
+                    category = 'enface'
                 elif 'octa' in file:
-                    self.files[f'{self.lineEdit_directory.text()}/{file}'] = ['octa', group_name[name]]
+                    category = 'octa'
                 else:
-                    self.files[f'{self.lineEdit_directory.text()}/{file}'] = ['oct', group_name[name]]
-                    
+                    category = 'oct'
+                
+                # set FOV
+                FOV = None
+                if '12x12mm' in file or '12mmx12mm' in file:
+                    FOV = '12*12'
+                elif '6x6mm' in file or '6mmx6mm' in file:
+                    FOV = '6*6'
+                else: # default to 3
+                    FOV = '3*3'
+                self.files[f'{self.lineEdit_directory.text()}/{file}'] = [FOV, category, group_name[name]]
+    
     
     # clicked on the load tsv button, 
     def _load_tsv_action(self):
@@ -100,7 +114,6 @@ class UI_Select_Folder_Action(QDialog):
         self.tsv_dataset = load_tsv(file_path)
         
         for group in range(len(self.tsv_dataset)):
-        #for group in range(10):
             oct_fp, octa_fp, enface_fp = self.tsv_dataset.get_filepath(group)
             self.files[enface_fp] = ['enface', group]
             self.files[oct_fp] = ['oct', group]
@@ -153,8 +166,9 @@ class UI_Select_Folder_Action(QDialog):
                 combo_box.setStyleSheet("color: white")  # Set style once
                 
             
-            for i, (file, [category, groupID]) in enumerate(self.files.items()):
+            for i, (file, [FOV, category, groupID]) in enumerate(self.files.items()):
                 # First column - filename
+                
                 self.tableWidget.setItem(i, 0, QTableWidgetItem(file))
         
                 # second column is the group name text edit
@@ -162,7 +176,7 @@ class UI_Select_Folder_Action(QDialog):
                 line_edit.setText(str(groupID))
                 self.tableWidget.setCellWidget(i, 1, line_edit)
         
-                # Third column - Use pre-created QComboBox
+                # Third column - Category
                 combo_box = category_combo_boxes[i]  # Get the corresponding QComboBox
                 index = combo_box.findText(category)  # Find the index of the category
                 if index != -1:
@@ -171,7 +185,7 @@ class UI_Select_Folder_Action(QDialog):
         
                 # Fourth column - FOV
                 combo_box = FOV_combo_boxes[i]  # Get the corresponding QComboBox
-                index = combo_box.findText(category)  # Find the index of the category
+                index = combo_box.findText(FOV)  # Find the index of the category
                 if index != -1:
                     combo_box.setCurrentIndex(index)  # Set the default selection to category
                 self.tableWidget.setCellWidget(i, 3, combo_box)  # Use pre-created ComboBox
@@ -221,14 +235,14 @@ class UI_Select_Folder_Action(QDialog):
     def select_all_action(self):
         # fill filenames and check box
         for i in range(self.tableWidget.rowCount()):
-            self.tableWidget.item(i, 3).setCheckState(Qt.Checked)
+            self.tableWidget.item(i, 4).setCheckState(Qt.Checked)
         
         
     # pressed deselect_all button action
     def deselect_all_action(self):
         # fill filenames and check box
         for i in range(self.tableWidget.rowCount()):  
-            self.tableWidget.item(i, 3).setCheckState(Qt.Unchecked)
+            self.tableWidget.item(i, 4).setCheckState(Qt.Unchecked)
             
             
     # finish button pressed, save to data to main class and close the window
@@ -264,6 +278,12 @@ class UI_Select_Folder_Action(QDialog):
                 file_path = self.tableWidget.item(i, 0).text()
                 if category == 'enface':
                     data_map[group]['enface_path'] = file_path
+                    
+                    # create folders
+                    base_dir = self.parent_cls.output_folder
+                    filename_no_ext = os.path.splitext(os.path.basename(file_path))[0]
+                    os.makedirs(os.path.join(base_dir, filename_no_ext), exist_ok=True)
+                    
                 elif category == 'oct':
                     data_map[group]['oct_path'] = file_path
                 else:

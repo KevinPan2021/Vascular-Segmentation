@@ -197,7 +197,7 @@ QScrollBar:vertical {
             <number>0</number>
            </property>
            <property name="columnCount">
-            <number>1</number>
+            <number>2</number>
            </property>
            <attribute name="horizontalHeaderCascadingSectionResizes">
             <bool>false</bool>
@@ -244,6 +244,14 @@ QScrollBar:vertical {
              </brush>
             </property>
            </column>
+           <column>
+            <property name="text">
+             <string>FOV</string>
+            </property>
+            <property name="textAlignment">
+             <set>AlignCenter</set>
+            </property>
+           </column>
           </widget>
          </item>
          <item>
@@ -278,7 +286,7 @@ QScrollBar:vertical {
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="label_preview_3">
+          <widget class="QLabel" name="label_enface">
            <property name="minimumSize">
             <size>
              <width>350</width>
@@ -306,7 +314,7 @@ QScrollBar:vertical {
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_4">
            <item>
-            <widget class="QToolButton" name="frame4_button_Complexity_3">
+            <widget class="QToolButton" name="button_skeleton">
              <property name="minimumSize">
               <size>
                <width>70</width>
@@ -355,10 +363,13 @@ QToolButton:disabled {
              <property name="checkable">
               <bool>true</bool>
              </property>
+             <property name="checked">
+              <bool>false</bool>
+             </property>
             </widget>
            </item>
            <item>
-            <widget class="QToolButton" name="frame4_button_Complexity_5">
+            <widget class="QToolButton" name="button_skeleMap">
              <property name="minimumSize">
               <size>
                <width>70</width>
@@ -402,7 +413,7 @@ QToolButton:disabled {
 }</string>
              </property>
              <property name="text">
-              <string>SkeleRg</string>
+              <string>SkeleMap</string>
              </property>
              <property name="checkable">
               <bool>true</bool>
@@ -410,7 +421,7 @@ QToolButton:disabled {
             </widget>
            </item>
            <item>
-            <widget class="QToolButton" name="frame4_button_Complexity_2">
+            <widget class="QToolButton" name="button_diameter">
              <property name="minimumSize">
               <size>
                <width>70</width>
@@ -462,7 +473,7 @@ QToolButton:disabled {
             </widget>
            </item>
            <item>
-            <widget class="QToolButton" name="frame4_button_Complexity_4">
+            <widget class="QToolButton" name="button_area">
              <property name="minimumSize">
               <size>
                <width>70</width>
@@ -514,7 +525,7 @@ QToolButton:disabled {
             </widget>
            </item>
            <item>
-            <widget class="QToolButton" name="frame4_button_Complexity">
+            <widget class="QToolButton" name="button_complexity">
              <property name="minimumSize">
               <size>
                <width>70</width>
@@ -568,7 +579,7 @@ QToolButton:disabled {
           </layout>
          </item>
          <item>
-          <widget class="QLabel" name="label_preview">
+          <widget class="QLabel" name="label_quant">
            <property name="minimumSize">
             <size>
              <width>700</width>
@@ -580,6 +591,9 @@ QToolButton:disabled {
              <width>700</width>
              <height>700</height>
             </size>
+           </property>
+           <property name="cursor">
+            <cursorShape>CrossCursor</cursorShape>
            </property>
            <property name="styleSheet">
             <string notr="true">background-color: rgb(56, 64, 85);</string>
@@ -657,6 +671,89 @@ QToolButton:disabled {
         </widget>
        </item>
        <item>
+        <widget class="QLabel" name="label_FileInfo_12">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <family>微软雅黑</family>
+           <pointsize>12</pointsize>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">color:rgb(255,255,255);</string>
+         </property>
+         <property name="text">
+          <string>Vessels</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="comboBox_vessels">
+         <property name="minimumSize">
+          <size>
+           <width>200</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>200</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QComboBox {
+	border-radius: 4px;
+	background-color:rgb(83, 89, 110);
+	color:white;
+	border: 1px solid black;
+}
+
+QComboBox QAbstractItemView { color: white; }
+
+QComboBox:disabled {
+	border-radius: 4px;
+	background-color:rgb(83, 89, 110);
+	color:rgb(200, 200, 200);
+	border: 0px solid black;
+}</string>
+         </property>
+         <item>
+          <property name="text">
+           <string>Vein</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Artery</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Capillary</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Large Vessels</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>All</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
         <widget class="QLabel" name="label_FileInfo_11">
          <property name="maximumSize">
           <size>
@@ -682,7 +779,7 @@ QToolButton:disabled {
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineEdit_directory_3">
+        <widget class="QLineEdit" name="lineEdit_mean">
          <property name="minimumSize">
           <size>
            <width>0</width>
@@ -735,7 +832,7 @@ QLineEdit:disabled {
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineEdit_directory_4">
+        <widget class="QLineEdit" name="lineEdit_cursor">
          <property name="minimumSize">
           <size>
            <width>0</width>
@@ -845,7 +942,7 @@ QToolButton:disabled {
           </size>
          </property>
          <property name="checkable">
-          <bool>false</bool>
+          <bool>true</bool>
          </property>
          <property name="toolButtonStyle">
           <enum>Qt::ToolButtonTextUnderIcon</enum>
@@ -853,7 +950,7 @@ QToolButton:disabled {
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="button_select_all">
+        <widget class="QToolButton" name="button_mask">
          <property name="minimumSize">
           <size>
            <width>100</width>
@@ -919,7 +1016,7 @@ QToolButton:disabled {
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="button_select_all_2">
+        <widget class="QToolButton" name="button_colorbar_range">
          <property name="minimumSize">
           <size>
            <width>100</width>
@@ -968,7 +1065,7 @@ QToolButton:disabled {
          </property>
          <property name="icon">
           <iconset>
-           <normaloff>icons/show.png</normaloff>icons/show.png</iconset>
+           <normaloff>icons/colorbar.png</normaloff>icons/colorbar.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -978,69 +1075,6 @@ QToolButton:disabled {
          </property>
          <property name="checkable">
           <bool>false</bool>
-         </property>
-         <property name="toolButtonStyle">
-          <enum>Qt::ToolButtonTextUnderIcon</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="button_export">
-         <property name="minimumSize">
-          <size>
-           <width>100</width>
-           <height>38</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>100</width>
-           <height>38</height>
-          </size>
-         </property>
-         <property name="font">
-          <font>
-           <family>微软雅黑</family>
-           <pointsize>8</pointsize>
-          </font>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">QToolButton {
-	color:white; 
-	background:qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0, 		stop:0 rgba(32, 38, 52, 255), 
-		stop:1 rgba(91, 99, 120, 255));
-	border: 2px solid black;
-	border-radius: 8px;
-}
-
-QToolButton:checked {
-	color:white; 
-	background-color: rgba(121, 129, 150, 255);
-	border: 2px solid black;
-	border-radius: 8px;
-	padding: 0;
-}
-
-QToolButton:disabled {
-	color:gray; 
-	background-color: rgba(32, 38, 52, 255);
-	border: 2px solid black;
-	border-radius: 8px;
-	padding: 0;
-}</string>
-         </property>
-         <property name="text">
-          <string>Export</string>
-         </property>
-         <property name="icon">
-          <iconset>
-           <normaloff>icons/finish.png</normaloff>icons/finish.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>18</width>
-           <height>18</height>
-          </size>
          </property>
          <property name="toolButtonStyle">
           <enum>Qt::ToolButtonTextUnderIcon</enum>

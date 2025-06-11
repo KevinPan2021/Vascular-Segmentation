@@ -1,4 +1,4 @@
-application_name = 'VasSeg V1.6'
+application_name = 'VasSeg V3.0.0'
 import ctypes
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(application_name)
 
@@ -6,18 +6,21 @@ ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(application_name)
 from PyQt5 import uic
 from PyQt5.QtGui import QFont, QIcon, QPixmap, QImage, QPainter, QColor, QPalette
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QTableWidgetItem, QHeaderView
+from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QTableWidgetItem
+import superqt # needed for pyinstaller generating .exe
 
 # system packages
 import sys
 import os
 import cv2
 import torch
+import configparser
 
 # custom packages
 from UI_utility import UI_Util
 from UI_manual import UI_Manual_Action
 from UI_import import UI_Select_Folder_Action
+from UI_quality_check import UI_Quality_Check_Action
 from UI_vessel_quant import UI_Vessel_Quant_Action
 from read_write import Read_Data, Load_Model
 from data_process import ProcessThread
@@ -27,13 +30,18 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class QT_Action(QMainWindow):
-
+    
+    # config.ini
+    config = configparser.ConfigParser()
+    config.read('Vas_config.ini')
+    
+    
     def __init__(self):
         # system variable
         super(QT_Action, self).__init__()
         uic.loadUi('QT_main.ui', self)
 
-        self.setWindowIcon(QIcon('icons/UW.png')) # changed the window icon
+        self.setWindowIcon(QIcon('icons/logo.png')) # changed the window icon
         self.setWindowTitle(application_name) # set the title
         
         self.setWindowState(Qt.WindowActive)
@@ -90,6 +98,7 @@ class QT_Action(QMainWindow):
         self.main_button_select_folder.clicked.connect(self.select_folder_action)
         self.button_process.clicked.connect(self.process_action)
         self.main_button_manual.clicked.connect(self.manual_correction_action)
+        self.main_button_quality_check.clicked.connect(self.quanlity_check_action)
         self.main_button_vessel_quant.clicked.connect(self.vessel_quant_action)
         
         # checkbox
@@ -110,7 +119,8 @@ class QT_Action(QMainWindow):
         for i in range(len(self.dataset)):
             # get the enface filepath
             self.main_tableWidget.setItem(i, 0, QTableWidgetItem(self.dataset.get_filepath(i)[2]))
-
+            # get the fov
+            self.main_tableWidget.setItem(i, 1, QTableWidgetItem(self.dataset.get_filepath(i)[3]))
         
     
     # selected a table cell, display the images
@@ -154,43 +164,54 @@ class QT_Action(QMainWindow):
             return
         
         enface_name = os.path.basename(enface_path)
-        prediction_name = f'{enface_name}_prediction.png'
-        model_output_name = f'{enface_name}_output.png'
-        if not self.main_checkBox_model_output.isChecked() and prediction_name in os.listdir(self.output_folder):
-            color_img = cv2.imread(f'{self.output_folder}/{prediction_name}', cv2.IMREAD_UNCHANGED)
+        
+        model_output_name = 'output.png'
+        
+        filename_no_ext = os.path.splitext(os.path.basename(enface_name))[0]
+        output_folder = f'{self.output_folder}/{filename_no_ext}'
+        
+        qimage = None
+        if not self.main_checkBox_model_output.isChecked():
+
+            for suffix in ["_manual.png", ".png"]:
+                prediction_name = f"{output_folder}/prediction{suffix}"
+                if os.path.exists(prediction_name):
+                    color_img = cv2.imread(prediction_name, cv2.IMREAD_UNCHANGED)
+                    
+                    # Convert from RGBA to BGRA
+                    color_img = cv2.cvtColor(color_img, cv2.COLOR_BGRA2RGBA)
+                    
+                    # Get grayscale image dimensions
+                    gray_height, gray_width = enface.shape[:2] 
+                    
+                    # Convert color image to QImage (RGBA format)
+                    color_height, color_width, channel = color_img.shape
+                    color_qimage = QImage(color_img.data, color_width, color_height, channel * color_width, QImage.Format_RGBA8888)
+                    
+                    # Resize color image to match grayscale dimensions
+                    color_qimage = color_qimage.scaled(gray_width, gray_height, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                    
+                    # Convert QImage to QPixmap for overlaying
+                    color_pixmap = QPixmap.fromImage(color_qimage)
+                    
+                    # Create a new QPixmap to hold the blended image
+                    final_pixmap = QPixmap(gray_width, gray_height)
+                    final_pixmap.fill(Qt.transparent)  # Ensure transparency
+                    
+                    # Use QPainter to overlay images
+                    painter = QPainter(final_pixmap)
+                    painter.drawPixmap(0, 0, gray_pixmap)  # Draw grayscale image as background
+                    painter.drawPixmap(0, 0, color_pixmap)  # Overlay the resized RGBA image
+                    painter.end()
+                    
+                    # Convert back to QImage if needed
+                    qimage = final_pixmap.toImage()
+                    
+                    break
+                
             
-            # Convert from RGBA to BGRA
-            color_img = cv2.cvtColor(color_img, cv2.COLOR_BGRA2RGBA)
-            
-            # Get grayscale image dimensions
-            gray_height, gray_width = enface.shape[:2] 
-            
-            # Convert color image to QImage (RGBA format)
-            color_height, color_width, channel = color_img.shape
-            color_qimage = QImage(color_img.data, color_width, color_height, channel * color_width, QImage.Format_RGBA8888)
-            
-            # Resize color image to match grayscale dimensions
-            color_qimage = color_qimage.scaled(gray_width, gray_height, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-            
-            # Convert QImage to QPixmap for overlaying
-            color_pixmap = QPixmap.fromImage(color_qimage)
-            
-            # Create a new QPixmap to hold the blended image
-            final_pixmap = QPixmap(gray_width, gray_height)
-            final_pixmap.fill(Qt.transparent)  # Ensure transparency
-            
-            # Use QPainter to overlay images
-            painter = QPainter(final_pixmap)
-            painter.drawPixmap(0, 0, gray_pixmap)  # Draw grayscale image as background
-            painter.drawPixmap(0, 0, color_pixmap)  # Overlay the resized RGBA image
-            painter.end()
-            
-            # Convert back to QImage if needed
-            qimage = final_pixmap.toImage()
-            
-            
-        elif model_output_name in os.listdir(self.output_folder):
-            color_img = cv2.imread(f'{self.output_folder}/{model_output_name}', cv2.IMREAD_COLOR)
+        elif model_output_name in os.listdir(output_folder):
+            color_img = cv2.imread(f'{output_folder}/{model_output_name}', cv2.IMREAD_COLOR)
             
             # Convert from RGB to BGR
             color_img = cv2.cvtColor(color_img, cv2.COLOR_RGB2BGR)
@@ -200,7 +221,9 @@ class QT_Action(QMainWindow):
             # Convert to QImage with RGBA format
             qimage = QImage(color_img.data, width, height, channel * width, QImage.Format_RGB888)
         
-        else:
+        
+        # empty
+        if qimage is None:
             return
             
         # Convert QImage to QPixmap and scale to fit label
@@ -257,18 +280,48 @@ class QT_Action(QMainWindow):
         new_window.exec_()
     
     
-    def vessel_quant_action(self):
-        '''
+    # quality check button pressed
+    def quanlity_check_action(self):
         if self.main_lineEdit_folder.text() == '':
             UI_Util.show_message(self, title='Action Error', message='Please import first')
             return
-        '''
-        new_window = UI_Vessel_Quant_Action(parent_cls = self)
+        
+        if self.selected_row is None:
+            UI_Util.show_message(self, title='Action Error', message='Please Select an image first')
+            return
+        
+        new_window = UI_Quality_Check_Action(parent_cls = self)
         new_window.link_commands()
         new_window.exec_()
+    
+    
+    # vessel_quant button pressed
+    def vessel_quant_action(self):
+        choices = ['Current', 'All']
+
+        action = UI_Util.show_message_selection(self, title='Vessel Quant Selection', message='Which file(s) do you want to quantify?', choices=choices)
         
+        # current file only
+        if action == 0:
+            if self.selected_row is None:
+                UI_Util.show_message(self, title='Action Error', message='Please Select an image first')
+                return
+            
+            new_window = UI_Vessel_Quant_Action(parent_cls=self, process_file=self.selected_row)
+            new_window.link_commands()
+            new_window.exec_()
         
+        # all files
+        elif action == 1:
+            new_window = UI_Vessel_Quant_Action(parent_cls=self)
+            new_window.link_commands()
+            new_window.exec_()
         
+        else:
+            return
+        
+    
+    # process button pressed action
     def process_action(self):
         
         if self.main_lineEdit_folder.text() == '':
@@ -280,10 +333,9 @@ class QT_Action(QMainWindow):
         def run():
             
             # ask if really need to (re)process
-            if not UI_Util.show_message_action(self, title='Run Check', message='Do you want to reprocess'):
+            if not UI_Util.show_message_action(self, title='Run Check', message='Do you want to process'):
                 self.button_process.setChecked(False)
                 return None
-            
             
             self.processed = False
             self.button_process.setText('Stop')

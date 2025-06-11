@@ -238,7 +238,7 @@ QScrollBar:vertical {
              <bool>true</bool>
             </property>
             <property name="columnCount">
-             <number>1</number>
+             <number>2</number>
             </property>
             <attribute name="horizontalHeaderDefaultSectionSize">
              <number>220</number>
@@ -249,6 +249,14 @@ QScrollBar:vertical {
             <column>
              <property name="text">
               <string>Filenames</string>
+             </property>
+             <property name="textAlignment">
+              <set>AlignCenter</set>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>FOV</string>
              </property>
              <property name="textAlignment">
               <set>AlignCenter</set>
@@ -706,6 +714,78 @@ QToolButton:disabled {
           <property name="icon">
            <iconset>
             <normaloff>icons/RoI.png</normaloff>icons/RoI.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>18</width>
+            <height>18</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>false</bool>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+          <property name="toolButtonStyle">
+           <enum>Qt::ToolButtonTextUnderIcon</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="main_button_quality_check">
+          <property name="minimumSize">
+           <size>
+            <width>100</width>
+            <height>38</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>100</width>
+            <height>38</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <family>微软雅黑</family>
+            <pointsize>8</pointsize>
+           </font>
+          </property>
+          <property name="toolTipDuration">
+           <number>-1</number>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QToolButton {
+	color:white; 
+	background:qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0, 		stop:0 rgba(32, 38, 52, 255), 
+		stop:1 rgba(91, 99, 120, 255));
+	border: 2px solid black;
+	border-radius: 8px;
+}
+
+QToolButton:checked {
+	color:white; 
+	background-color: rgba(121, 129, 150, 255);
+	border: 2px solid black;
+	border-radius: 8px;
+	padding: 0;
+}
+
+QToolButton:disabled {
+	color:gray; 
+	background-color: rgba(32, 38, 52, 255);
+	border: 2px solid black;
+	border-radius: 8px;
+	padding: 0;
+}</string>
+          </property>
+          <property name="text">
+           <string>Quanlity Check</string>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>icons/quality_check.png</normaloff>icons/quality_check.png</iconset>
           </property>
           <property name="iconSize">
            <size>

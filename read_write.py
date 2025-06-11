@@ -3,6 +3,7 @@ import cv2
 import torch
 import pydicom
 import pandas as pd
+import tifffile as tiff
 import os
 
 # custom package
@@ -63,8 +64,24 @@ class Read_Data():
     
     # reading png or jpg as 2D numpy array
     def read_image(self):
-        if self.filename.endswith('.png') or self.filename.endswith('.jpg'):
-            image = cv2.imread(self.filename, cv2.IMREAD_GRAYSCALE)
+        image = cv2.imread(self.filename, cv2.IMREAD_GRAYSCALE)
+        return image
+    
+    
+    # read tif or tiff as 2D numpy array
+    def load_tiff(self):
+        # Read single or multipage TIFF
+        image = tiff.imread(self.filename)  # Returns a NumPy array
+        
+        # If it has multiple channels, convert to grayscale manually
+        if image.ndim == 3:
+            if image.shape[2] == 4:  # RGBA
+                # Drop alpha and convert RGB to grayscale
+                image = image[:, :, :3]
+            if image.shape[2] == 3:
+                # Use luminance formula to convert RGB to grayscale
+                image = (0.299 * image[:, :, 0] + 0.587 * image[:, :, 1] + 0.114 * image[:, :, 2]).astype(np.uint8)
+            
         return image
     
     
@@ -100,15 +117,17 @@ class Read_Data():
     
     # retrieve the image
     def get(self):
-        if self.filename.endswith(('.png', '.jpg')):
+        if self.filename.endswith(('.png', '.jpg', '.bmp')):
             data = self.read_image()
         
         elif self.filename.endswith('.dcm'):
             data = self.load_dcm()
             
-        elif self.filename.endswith('avi'):
+        elif self.filename.endswith('.avi'):
             data = self.load_avi()
-            
+        
+        elif self.filename.endswith(('.tif', '.tiff')):
+            data = self.load_tiff()
         return data
             
 

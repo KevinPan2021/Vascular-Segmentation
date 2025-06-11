@@ -1,6 +1,6 @@
 # pyqt packages
 from PyQt5 import uic
-from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter, QColor, QPen, qAlpha
+from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter, QColor, QPen
 from PyQt5.QtWidgets import QDialog, QLabel
 from PyQt5.QtCore import QPoint, Qt
 
@@ -15,7 +15,7 @@ from skimage.morphology import remove_small_objects, label
 from UI_utility import UI_Util
 from Vessel_Extraction import Vessel_Quantification
 from read_write import Read_Data
-from data_process import qpixmap_to_numpy, overlay
+from data_process import qpixmap_to_numpy, overlay, calc_save_mask_AVA
 
 
 
@@ -171,12 +171,31 @@ class DrawableLabel(QLabel):
         self.update()  # Refresh QLabel to reflect the filtered overlay
 
         
-        
     def paintEvent(self, event):
         super().paintEvent(event)
         painter = QPainter(self)
         
-        # Draw the overlay pixmap
+        # not overlay
+        if not self.parent.checkBox_overlay.isChecked():
+            # Convert the OpenCV image to QImage
+            height, width = self.parent.enface.shape
+            gray_qimage = QImage(self.parent.enface.data, width, height, width, QImage.Format_Grayscale8)
+        
+            # Convert QImage to QPixmap and set it in the label
+            gray_pixmap = QPixmap.fromImage(gray_qimage)
+            
+            scaled_pixmap = gray_pixmap.scaled(
+                self.size(),  # Size of the QLabel
+                Qt.KeepAspectRatio,  # Use Qt.IgnoreAspectRatio to stretch
+                Qt.SmoothTransformation
+            )
+            
+            painter.drawPixmap(0, 0, scaled_pixmap)
+            
+            return
+        
+        
+        # draw the overlay pixmap    
         painter.drawPixmap(0, 0, self.parent.overlay_pixmap)
 
         # Draw the custom circular cursor without hiding the default cursor
@@ -208,7 +227,7 @@ class UI_Manual_Action(QDialog):
     def __init__(self, parent_cls = None):
         super(UI_Manual_Action, self).__init__()
         uic.loadUi('QT_manual.ui', self)
-        self.setWindowIcon(QIcon('icons/UW.png'))
+        self.setWindowIcon(QIcon('icons/logo.png'))
         self.setWindowTitle('Manual Segmentation')
         
         self.parent_cls = parent_cls
@@ -219,9 +238,14 @@ class UI_Manual_Action(QDialog):
         
         # load the prediction
         self.enface_name = os.path.basename(enface_fp)
-        prediction_name = f'{self.enface_name}_prediction.png'
-        if prediction_name in os.listdir(self.parent_cls.output_folder):
-            self.prediction = cv2.imread(f'{self.parent_cls.output_folder}/{prediction_name}', cv2.IMREAD_UNCHANGED)
+        
+        filename_no_ext = os.path.splitext(os.path.basename(self.enface_name))[0]
+        output_folder = f'{self.parent_cls.output_folder}/{filename_no_ext}'
+        
+        prediction_name = 'prediction.png'
+        
+        if prediction_name in os.listdir(output_folder):
+            self.prediction = cv2.imread(f'{output_folder}/{prediction_name}', cv2.IMREAD_UNCHANGED)
             # Convert from RGBA to BGRA
             self.prediction = cv2.cvtColor(self.prediction, cv2.COLOR_BGRA2RGBA)
         else:
@@ -237,7 +261,10 @@ class UI_Manual_Action(QDialog):
         self.label_overlay.__class__ = DrawableLabel  # Change the class of the existing QLabel
         self.label_overlay.__class__.initialize(self.label_overlay, self)
        
+        # automatically process
         self.update_enface_display()
+        self.process_action()
+        
         
         
     # If an attribute isn't found in this class, check in self.parent_cls.
@@ -246,13 +273,16 @@ class UI_Manual_Action(QDialog):
         
 
     def link_commands(self):
-        self.button_binarize.clicked.connect(self.binarize_action)
+        # button
+        self.button_process.clicked.connect(self.process_action)
         self.button_finish.clicked.connect(self.finish_action)
         self.button_fill_binary.clicked.connect(self.fill_binary_action)
-        
         self.button_undo.clicked.connect(self.label_overlay.undo_action)
         self.button_filter.clicked.connect(self.label_overlay.filter_action)
         self.button_clearall.clicked.connect(self.label_overlay.clear_action)
+        
+        # checkbox
+        self.checkBox_overlay.toggled.connect(self.label_overlay.update)
         
     
     # update the label display
@@ -316,8 +346,8 @@ class UI_Manual_Action(QDialog):
         self.label_overlay.setPixmap(scaled_pixmap)
 
         
-    # binarize the enface image
-    def binarize_action(self):
+    # process (binarize) the enface image
+    def process_action(self):
         thres = float(self.lineEdit_binary_threshold.text())
         self.binary = Vessel_Quantification(self.enface, thres).Ibinary2
         
@@ -358,77 +388,57 @@ class UI_Manual_Action(QDialog):
     
     # Rescale overlay_pixmap, convert to NumPy, and save it
     def finish_action(self):
-        print('before', set(qpixmap_to_numpy(self.overlay_pixmap)[...,3].flatten().tolist()))
         target_shape = self.enface.shape[:2]  # (height, width)
         
         # Resize overlay_pixmap to match cavf_pred_2D dimensions
         scaled_pixmap = self.overlay_pixmap.scaled(target_shape[1], target_shape[0], Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
         
-        print('after', set(qpixmap_to_numpy(scaled_pixmap)[...,3].flatten().tolist()))
-        
         # Convert the resized pixmap to a NumPy array
         prediction = qpixmap_to_numpy(scaled_pixmap)
         
         # Convert from RGBA to BGRA
+        prediction = cv2.resize(prediction, (256, 256), interpolation=cv2.INTER_LINEAR)
         prediction = cv2.cvtColor(prediction, cv2.COLOR_BGRA2RGBA)
         
+        
         overlayed = overlay(self.enface, prediction)
         
-        cv2.imwrite(f'{self.parent_cls.output_folder}/{self.enface_name}_prediction.png', prediction)
-        cv2.imwrite(f'{self.parent_cls.output_folder}/{self.enface_name}_overlay.png', overlayed)
+        filename_no_ext = os.path.splitext(os.path.basename(self.enface_name))[0]
+        output_folder = f'{self.parent_cls.output_folder}/{filename_no_ext}'
         
-        # Update display
-        self.parent_cls._update_display()
-        self.close()
-    '''
-    
-    def finish_action(self):
-        target_shape = self.enface.shape[:2]  # (height, width)
-    
-        # Convert QPixmap to QImage
-        overlay_image = self.overlay_pixmap.toImage().convertToFormat(QImage.Format_ARGB32)
-    
-        # Extract the alpha channel manually
-        width, height = overlay_image.width(), overlay_image.height()
-        alpha_array = np.zeros((height, width), dtype=np.uint8)
-    
-        for y in range(height):
-            for x in range(width):
-                pixel = overlay_image.pixel(x, y)
-                alpha_array[y, x] = qAlpha(pixel)  # Extract alpha value
-    
-        # Convert QImage without alpha to QPixmap
-        overlay_image_no_alpha = overlay_image.copy()
-        overlay_image_no_alpha = overlay_image_no_alpha.convertToFormat(QImage.Format_RGB32)
-        overlay_pixmap_no_alpha = QPixmap.fromImage(overlay_image_no_alpha)
-    
-        # Resize RGB smoothly
-        scaled_rgb_pixmap = overlay_pixmap_no_alpha.scaled(
-            target_shape[1], target_shape[0], Qt.IgnoreAspectRatio, Qt.SmoothTransformation
-        )
-    
-        # Resize alpha channel separately using nearest-neighbor (binary preservation)
-        scaled_alpha = cv2.resize(alpha_array, (target_shape[1], target_shape[0]), interpolation=cv2.INTER_NEAREST)
-    
-        # Convert resized RGB QPixmap to NumPy array
-        rgb_array = qpixmap_to_numpy(scaled_rgb_pixmap)
-    
-        # Ensure alpha is binary (0 or 255)
-        alpha_binary = np.where(scaled_alpha > 128, 255, 0).astype(np.uint8)
-    
-        # Merge RGB with binary alpha channel
-        prediction = cv2.merge((rgb_array[:, :, 0], rgb_array[:, :, 1], rgb_array[:, :, 2], alpha_binary))
-    
-        # Convert from RGBA to BGRA
-        prediction = cv2.cvtColor(prediction, cv2.COLOR_RGBA2BGRA)
-    
-        overlayed = overlay(self.enface, prediction)
-    
-        cv2.imwrite(f'{self.parent_cls.output_folder}/{self.enface_name}_prediction.png', prediction)
-        cv2.imwrite(f'{self.parent_cls.output_folder}/{self.enface_name}_overlay.png', overlayed)
-    
-        # Update display
-        self.parent_cls._update_display()
-        self.close()
-    '''
+        cv2.imwrite(f'{output_folder}/prediction_manual.png', prediction)
+        cv2.imwrite(f'{output_folder}/overlay_manual.png', overlayed)
+        
+        
+        pred3d_argmax = np.zeros((256, 256), dtype=np.int64)
+        
+        artery_mask = prediction[...,2] >= 200
+        vein_mask = prediction[...,0] >= 200
+        FAZ_mask = prediction[...,1] >= 200 
+        
+        # add capillary = 1
+        for suffix in ["capillary_mask_manual.png", "capillary_mask.png"]:
+            capillary_mask_path = f"{output_folder}/{suffix}"
+            if os.path.exists(capillary_mask_path):
+                capillary_mask = cv2.imread(capillary_mask_path, cv2.IMREAD_GRAYSCALE)
+                pred3d_argmax[capillary_mask.astype(bool)] += 1
+        
+                # Zero out regions overlapping with artery, vein, and FAZ masks
+                capillary_mask[artery_mask] = 0
+                capillary_mask[vein_mask] = 0
+                capillary_mask[FAZ_mask] = 0
+                break
             
+            
+        pred3d_argmax[artery_mask] += 2 # artery
+        pred3d_argmax[vein_mask] += 3 # vein
+        pred3d_argmax[FAZ_mask] += 4 # FAZ
+        
+        calc_save_mask_AVA(pred3d_argmax, self.parent_cls.output_folder, self.enface_name, manual=True)
+        
+        # Update display
+        self.parent_cls._update_display()
+        self.close()
+    
+            
+    
