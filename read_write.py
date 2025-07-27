@@ -3,12 +3,12 @@ import cv2
 import torch
 import pydicom
 import pandas as pd
-import tifffile as tiff
+# import tifffile as tiff
 import os
 
 # custom package
 #from model import IPNV2, IPNV2_with_proj_map
-from model_FiLM import IPNV2, IPNV2_with_proj_map
+from model_FiLM import IPNV2, IPNV2_with_proj_map, IPNV2_with_proj_map_and_msa
 
 
 # load the model into device
@@ -38,7 +38,19 @@ class Load_Model():
         return cavf_model
     
     
-    
+    def load_msa(self, in_channels, n_classes, get_2D_pred, dc_norms, use_rba=False, use_large_unet=True):
+        model = IPNV2_with_proj_map_and_msa(in_channels, n_classes, proj_map_in_channels=2,
+                                        get_2D_pred=get_2D_pred, dc_norms=dc_norms, use_rba=use_rba, 
+                                        use_large_unet=use_large_unet)
+        state_dict = torch.load(
+            'your/path/to/msa/model.pth', # replace with actual path
+            map_location='cpu', 
+            weights_only=False
+        )['model']
+        
+        model.load_state_dict(state_dict)
+        return model
+
     # retrieve the model
     def get(self):
         if self.name == 'IPNV2':
@@ -46,8 +58,13 @@ class Load_Model():
                 in_channels=2, n_classes=5, get_2D_pred=True, 
                 dc_norms='NG', use_proj_map=True
             )
-        self.model = self.model.to(self.device)
-        
+        elif self.name == 'IPNV2_msa':
+            self.model = self.load_msa(
+                in_channels=2, n_classes=5, get_2D_pred=True, 
+                dc_norms='NG', use_rba=False, use_large_unet=True
+            )
+            
+        self.model = self.model.to(self.device)        
         return self.model
     
 

@@ -3,7 +3,7 @@ import math
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import init
-
+from AttentionModules import LA_RBA_UNet, MutiScaleLayerAttention, InConv3d
 
 # IPN
 class IPN(nn.Module):
@@ -54,7 +54,7 @@ class Double3DConv(nn.Module):
 
 # IPN-V2
 class IPNV2(nn.Module):
-    def __init__(self, in_channels, n_classes, dc_norms="NN"):
+    def __init__(self, in_channels, n_classes, dc_norms="NN", use_rba=True, use_large_unet=False):
         super(IPNV2, self).__init__()
 
         self.film_resolution = nn.Sequential(
@@ -67,7 +67,12 @@ class IPNV2(nn.Module):
         self.FPM2 = FPM(16, 32, h=4)  # H: 8->2, C: 16->32
         self.FPM3 = FPM(32, 64, h=2)  # H: 2->1, C: 32->64
 
-        self.SegNet2D = UNet(64, 128, n_classes, dc_norms = dc_norms)  # H is squeezed, C -> n_classes: 64 -> 5        
+        self.use_rba = use_rba
+        if use_rba:
+            self.SegNet2D_RBA = LA_RBA_UNet(64, 64, n_classes)  # H is squeezed, C -> n_classes: 64 -> 5        
+        else:
+            self.SegNet2D = UNet(64, 128, n_classes, dc_norms = dc_norms, large=use_large_unet)  # H is squeezed, C -> n_classes: 64 -> 5  
+            
         
     def forward(self, x, resolution):
         
@@ -83,8 +88,10 @@ class IPNV2(nn.Module):
 
     def apply_head(self, x, film):
 
-       
-        cavf = self.SegNet2D(x, film)
+        if self.use_rba:
+            cavf = self.SegNet2D_RBA(x, film)
+        else:
+            cavf = self.SegNet2D(x, film)
         # cavf = torch.unsqueeze(cavf, 2)
         return cavf
 
@@ -177,8 +184,9 @@ class FPM(nn.Module):
 
 class IPNV2_with_proj_map(IPNV2):
     def __init__(self, in_channels, n_classes, proj_map_in_channels, 
-                 get_2D_pred=False, dc_norms="NN"):
-        super(IPNV2_with_proj_map, self).__init__(in_channels, n_classes, dc_norms=dc_norms)
+                 get_2D_pred=False, dc_norms="NN", use_rba=False, use_large_unet=False):
+        super(IPNV2_with_proj_map, self).__init__(in_channels, n_classes, dc_norms=dc_norms, 
+                                                  use_rba=use_rba, use_large_unet=use_large_unet)
 
         self.pm_downsize_conv = None
         self.proj_map_unet = UNet(proj_map_in_channels, 128, 64, dc_norms=dc_norms)
@@ -195,13 +203,20 @@ class IPNV2_with_proj_map(IPNV2):
     def apply_2D_head(self, x, film):
         return self.head2D(x, film)
     
+    def fpm_forward(self, x, film):
+        x = self.FPM1(x, film)
+        x = self.FPM2(x, film)
+        x = self.FPM3(x, film) 
+         
+        x = torch.squeeze(x, 2)
+        
+        return x
+    
     def forward(self, x, proj_map, resolution):
         film = self.film_resolution(resolution)
         
-        x = self.FPM1(x, film)
-        x = self.FPM2(x, film)
-        x = self.FPM3(x, film)        
-        x = torch.squeeze(x, 2)
+        x = self.fpm_forward(x, film)
+              
             
         proj_map_features = self.proj_map_unet(proj_map, film)
         
@@ -214,9 +229,105 @@ class IPNV2_with_proj_map(IPNV2):
             return cavf3D_logits, cavf2D_logits
         else:
             return self.apply_head(x, film)
+        
+class IPNV2_with_proj_map_and_msa(IPNV2_with_proj_map):
+    def __init__(self, in_channels, n_classes, proj_map_in_channels, 
+                 get_2D_pred=False, dc_norms="NG", use_rba = False, use_large_unet=False):
+        super(IPNV2_with_proj_map_and_msa, self).__init__(in_channels, n_classes, proj_map_in_channels,
+                                                          get_2D_pred, dc_norms, use_rba, use_large_unet)
+        
+        
+        
+        # self.in_conv = InConv3d(in_channels, 16)
+        # self.msa1 = MutiScaleLayerAttention(16, 128, num_groups=8)  # 64 channels, depth size 8
+        # self.FPM1 = FPM(16, 32, 16)
+        # self.msa2 = MutiScaleLayerAttention(32, 8, num_groups=16)
+        # self.FPM2 = FPM(32, 64, 4)
+        # self.msa3 = MutiScaleLayerAttention(64, 2, num_groups=32)
+        # self.FPM3 = FPM(64, 64, 2)
+        
+        self.in_conv = InConv3d(in_channels, 8)
+        self.msa1 = MutiScaleLayerAttention(8, 128, num_groups=4)  # 64 channels, depth size 8
+        self.FPM1 = FPM(8, 16, 16)
+        self.msa2 = MutiScaleLayerAttention(16, 8, num_groups=8)
+        self.FPM2 = FPM(16, 32, 4)
+        self.msa3 = MutiScaleLayerAttention(32, 2, num_groups=16)
+        self.FPM3 = FPM(32, 64, 2)
+    
+    def fpm_forward(self, x, film):
+        x = self.in_conv(x, film) # c = 2 -> 8 
+        
+        x = self.msa1(x, film) # groups = 4
+    
+        
+        x = self.FPM1(x, film) # c = 8 -> 16
+        x = self.msa2(x, film) # groups = 8
+        x = self.FPM2(x, film) # c = 16 -> 32
+        x = self.msa3(x, film) # groups = 16
+        x = self.FPM3(x, film) # c = 32 -> 64
+        x = torch.squeeze(x, 2)
+        
+        return x
+    
+class IPNV2_with_proj_map_and_msa_fine(IPNV2_with_proj_map_and_msa):
+    def __init__(self, fine_in_channels, **kwargs):
+        super().__init__(**kwargs)
+        
+        self.in_conv_fine = InConv3d(fine_in_channels, 16)
+        self.msa1_fine = MutiScaleLayerAttention(16, 128, num_groups=8)  # 64 channels, depth size 8
+        self.FPM1_fine = FPM(16, 32, 16)
+        self.msa2_fine = MutiScaleLayerAttention(32, 8, num_groups=16)
+        self.FPM2_fine = FPM(32, 64, 4)
+        self.msa3_fine = MutiScaleLayerAttention(64, 2, num_groups=32)
+        self.FPM3_fine = FPM(64, 64, 2)
+        
+        self.conv = DoubleConv2D(132, 64, norms="NG")
+    
+    def fpm_fine_forward(self, x, film):
+        x = self.in_conv_fine(x, film)
+        x = self.msa1_fine(x, film)
+        x = self.FPM1_fine(x, film)
+        x = self.msa2_fine(x, film)
+        x = self.FPM2_fine(x, film)
+        x = self.msa3_fine(x, film)
+        x = self.FPM3_fine(x, film)
+        x = torch.squeeze(x, 2)
+        
+        B, C, H, W = x.shape
+        x = x.reshape(B, 16, C // 16, H, W)
+        x = x.reshape(B, 4, 4, C // 16, H, W)
+        x = x.permute(0, 3, 1, 4, 2, 5).contiguous() # (B, C // 16, 4, H, 4, W)
+        x = x.reshape(B, C // 16, H * 4, W * 4)
+        return x
+    
+    def forward(self, x, fine, proj_map, resolution):
+        film = self.film_resolution(resolution)
+        
+        x = self.fpm_forward(x, film)
+        fine = self.fpm_fine_forward(fine, film)
+        proj_map_features = self.proj_map_unet(proj_map, film)
+        
+        print(f"x shape: {x.shape}, fine shape: {fine.shape}, proj_map_features shape: {proj_map_features.shape}")
+        x = torch.cat([x, fine, proj_map_features], dim=1)
+        
+        x = self.conv(x, film)
+        
+        if self.get_2D_pred:
+            cavf3D_logits = self.apply_head(x, film)
+            cavf2D_logits = self.apply_2D_head(proj_map_features, film)
+            return cavf3D_logits, cavf2D_logits
+        else:
+            return self.apply_head(x, film)
+    
+
+        
+        
+        
+        
 
 class UNet(nn.Module):
-    def __init__(self, in_channels, channels, n_classes, return_feature=False, dc_norms="NN"):
+    def __init__(self, in_channels, channels, n_classes, return_feature=False, 
+                 dc_norms="NN", extract_film_feature=False, large=False):
         """
         in_channels: number of input channels
         channels: number of channels in the hidden layers
@@ -228,6 +339,13 @@ class UNet(nn.Module):
         # output dim change is just in_channels -> n_classes.
         # the H and W will be the same.
 
+        if extract_film_feature:
+            self.film_resolution = nn.Sequential(
+                nn.Linear(3, 64),
+                nn.Tanh()
+            )
+        self.extract_film_feature = extract_film_feature
+        
         self.in_channels = in_channels
         self.channels = channels
         self.n_classes = n_classes
@@ -237,25 +355,40 @@ class UNet(nn.Module):
 
         # each down layer is a convolutional one.
         # C -> C ; H -> floor(H/2) ; W -> floor(W/2)
-        self.down1 = Down(channels, 2 * channels, dc_norms)
-        self.down2 = Down(2 * channels, 2 * channels, dc_norms)
-        self.down3 = Down(2 * channels, 4 * channels, dc_norms)
-        self.down4 = Down(4 * channels, 4 * channels, dc_norms)
+        
+        if large:
+            # large unet
+            self.down1 = Down(channels, 2 * channels, dc_norms)
+            self.down2 = Down(2 * channels, 4 * channels, dc_norms)
+            self.down3 = Down(4 * channels, 8 * channels, dc_norms)
+            self.down4 = Down(8 * channels, 16 * channels, dc_norms)
+            
+            self.up1 = Up( (16+8) * channels, 8 * channels, norms=dc_norms)
+            self.up2 = Up( (8+4) * channels, 4 * channels, norms=dc_norms)
+            self.up3 = Up( (4+2) * channels, 2 * channels, norms=dc_norms)
+            self.up4 = Up( (2+1) * channels, channels, norms=dc_norms)
+        else:
+        
+            self.down1 = Down(channels, 2 * channels, dc_norms)
+            self.down2 = Down(2 * channels, 2 * channels, dc_norms)
+            self.down3 = Down(2 * channels, 4 * channels, dc_norms)
+            self.down4 = Down(4 * channels, 4 * channels, dc_norms)
 
-    
-        # each up layer is either a upsampling bilinear layer or an ConvTranspose layer.
-        # Channels kept the same, while H and W increase through same dims in down layers.
-        self.up1 = Up( (4+4) * channels, 4 * channels, norms=dc_norms)
-        self.up2 = Up( (4+2) * channels, 2 * channels, norms=dc_norms)
-        self.up3 = Up( (2+2) * channels, 2 * channels, norms=dc_norms)
-        self.up4 = Up( (2+1) * channels, channels, norms=dc_norms) 
+            # each up layer is either a upsampling bilinear layer or an ConvTranspose layer.
+            # Channels kept the same, while H and W increase through same dims in down layers.
+            self.up1 = Up( (4+4) * channels, 4 * channels, norms=dc_norms)
+            self.up2 = Up( (4+2) * channels, 2 * channels, norms=dc_norms)
+            self.up3 = Up( (2+2) * channels, 2 * channels, norms=dc_norms)
+            self.up4 = Up( (2+1) * channels, channels, norms=dc_norms) 
 
         # output has same dims as input except C -> n_classes.
         self.outc = nn.Conv2d(channels, n_classes, kernel_size=1)
         
     
     def get_feature(self, x, film):
-        
+        if self.extract_film_feature:
+            film = self.film_resolution(film)
+            
         x1 = self.inc(x, film)  # (N, 64, 100, 100) -> (N, 128, 100, 100)
 
         x2 = self.down1(x1, film)  # (N, 128, 100, 100) -> (N, 128, 50, 50)
@@ -352,7 +485,6 @@ class DoubleConv2D(nn.Module):
         x = self.relu2(x)
         
         return x
-        # return self.double_conv(x)
 
 
 
@@ -414,3 +546,6 @@ class Up(nn.Module):
         x = self.conv(x, film)
 
         return x
+
+
+
