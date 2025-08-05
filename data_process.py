@@ -66,9 +66,8 @@ class Aireadi_Dataset(Dataset):
         elif FOV == '12*12':
             FOV_tensor = torch.tensor([0, 0, 1])
         
-        if octa_fp.endswith('.dcm'):
+        if octa_fp.endswith('.dcm') and roi is None:
             octa_dicom = pydicom.dcmread(octa_fp)
-            
             pixel_measures = octa_dicom.SharedFunctionalGroupsSequence[0].PixelMeasuresSequence[0]
             depth_pixel_spacing = pixel_measures.PixelSpacing[1]
             roi = int(2 / depth_pixel_spacing) # target depth of 2mm
