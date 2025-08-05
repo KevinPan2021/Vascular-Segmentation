@@ -66,7 +66,8 @@ class Aireadi_Dataset(Dataset):
         elif FOV == '12*12':
             FOV_tensor = torch.tensor([0, 0, 1])
         
-        if octa_fp.endswith('.dcm') and roi is None:
+        if roi is None:
+            assert octa_fp.endswith('.dcm'), "OCTA file must be a DICOM file to get the ROI."
             octa_dicom = pydicom.dcmread(octa_fp)
             pixel_measures = octa_dicom.SharedFunctionalGroupsSequence[0].PixelMeasuresSequence[0]
             depth_pixel_spacing = pixel_measures.PixelSpacing[1]
