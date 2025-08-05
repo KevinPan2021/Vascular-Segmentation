@@ -5,6 +5,7 @@ from PyQt5.QtCore import pyqtSignal, QThread
 import os
 import cv2
 import numpy as np
+import pydicom
 import torch
 import torch.nn.functional as F
 from torch.amp import autocast
@@ -65,8 +66,17 @@ class Aireadi_Dataset(Dataset):
         elif FOV == '12*12':
             FOV_tensor = torch.tensor([0, 0, 1])
         
+        if octa_fp.endswith('.dcm'):
+            octa_dicom = pydicom.dcmread(octa_fp)
+            
+            pixel_measures = octa_dicom.SharedFunctionalGroupsSequence[0].PixelMeasuresSequence[0]
+            depth_pixel_spacing = pixel_measures.PixelSpacing[1]
+            roi = int(2 / depth_pixel_spacing) # target depth of 2mm
+        else:
+            roi = self.roi
+        
         data, proj_map = process_data(
-            OCT_img=OCT_img, OCTA_img=OCTA_img, roi_target_depth=self.roi, 
+            OCT_img=OCT_img, OCTA_img=OCTA_img, roi_target_depth=roi, 
             use_proj_map=True, OCTA_proj_map=enface_img
         )
         
@@ -472,7 +482,7 @@ def process_data(OCT_img, OCTA_img, input_shape=(128, 256, 256),
     data = torch.cat((OCT_img, OCTA_img), dim=1)
     
     # get region of interest by cropping depth to target depth
-    #data = get_ROI(data, roi_target_depth)
+    data = get_ROI(data, roi_target_depth)
     
     # normalize the data along channels
     for i in range(data.shape[1]):
